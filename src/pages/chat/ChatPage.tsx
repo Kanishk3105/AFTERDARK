@@ -11,6 +11,8 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { ChatMessage, MediaExpiry } from '@/types';
 import { isExpired } from '@/services/mediaExpiry';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -120,6 +122,28 @@ export const ChatPage: React.FC = () => {
     setCapturedPreviewUrl(null);
     setIsRecordingVideo(false);
     setVideoTimer(0);
+
+    if (Capacitor.isNativePlatform() && mode === 'photo') {
+      try {
+        const photo = await Camera.getPhoto({
+          quality: 92,
+          resultType: CameraResultType.DataUrl,
+          source: CameraSource.Camera,
+          saveToGallery: false,
+          allowEditing: false,
+        });
+        if (!photo.dataUrl) return;
+        const response = await fetch(photo.dataUrl);
+        const blob = await response.blob();
+        setCapturedBlob(blob);
+        setCapturedPreviewUrl(URL.createObjectURL(blob));
+        setIsCameraOpen(true);
+      } catch (error) {
+        console.error('Native camera error', error);
+        showToast('Camera permission denied or camera hardware unavailable', 'warning');
+      }
+      return;
+    }
 
     try {
       const constraints: MediaStreamConstraints = {
