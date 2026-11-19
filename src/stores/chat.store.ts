@@ -3,6 +3,7 @@ import { db } from '@/data/db';
 import { seal } from '@/security/crypto';
 import { publish } from '@/services/channel';
 import { expiresAt as mediaExpiresAt } from '@/services/mediaExpiry';
+import { getRemoteClient } from '@/services/sync';
 import { ChatMessage, MediaExpiry, MessageType } from '@/types';
 
 interface SendParams {
@@ -120,6 +121,19 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     await persist(message);
     if (roomCode) {
       publish({ roomCode, senderId, type: 'chat', payload: message });
+      const client = getRemoteClient();
+      if (client) {
+        const { error } = await client.from('chat_messages').insert({
+          id: message.id,
+          room_code: roomCode,
+          sender_device_id: senderId,
+          sealed_content: sealedContent,
+          media_id: mediaId,
+          media_expiry: mediaExpiry,
+          expires_at: message.expiresAt,
+        });
+        if (error) console.error('Remote chat insert failed', error);
+      }
     }
     window.setTimeout(() => {
       set((state) => ({

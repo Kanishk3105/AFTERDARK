@@ -21,6 +21,8 @@ import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { JoinRoomPage } from '@/pages/onboarding/JoinRoomPage';
 import { subscribe } from '@/services/channel';
 import { useChatStore } from '@/stores/chat.store';
+import { subscribeRemoteRoom } from '@/services/sync';
+import type { ChatMessage } from '@/types';
 
 function App() {
   const location = useLocation();
@@ -36,7 +38,41 @@ function App() {
       if (envelope.senderId === deviceId) return;
       void useChatStore.getState().receiveMessage(envelope.payload as never);
     });
-    return unsubscribe;
+    let unsubscribeRemote: (() => Promise<void>) | null = null;
+    const roomCode = useAppStore.getState().roomCode;
+    if (roomCode) {
+      void subscribeRemoteRoom(roomCode, (payload) => {
+        const row = payload as {
+          id?: string;
+          sender_device_id?: string;
+          sealed_content?: string;
+          media_id?: string;
+          media_expiry?: ChatMessage['mediaExpiry'];
+        };
+        const senderId = row.sender_device_id;
+        if (!row.id || !senderId || senderId === useAppStore.getState().deviceId) return;
+        void useChatStore.getState().receiveMessage({
+          id: row.id,
+          roomId: roomCode,
+          senderId,
+          senderName: 'Partner',
+          type: row.media_id ? 'image' : 'text',
+          content: '',
+          sealedContent: row.sealed_content,
+          encryption: row.sealed_content ? 'aes-gcm' : 'plaintext',
+          mediaId: row.media_id,
+          mediaExpiry: row.media_expiry,
+          reactions: {},
+          status: 'delivered',
+          createdAt: new Date().toISOString(),
+          deleted: false,
+        });
+      }).then((cleanup) => { unsubscribeRemote = cleanup; });
+    }
+    return () => {
+      unsubscribe();
+      if (unsubscribeRemote) void unsubscribeRemote();
+    };
   }, []);
 
   return (

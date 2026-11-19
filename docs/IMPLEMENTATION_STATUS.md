@@ -13,7 +13,7 @@ INTEGRATION TESTED, or COMPLETE.
 | Pairing join route | TESTED LOCALLY | `src/pages/onboarding/JoinRoomPage.tsx` |
 | Exactly-two room authorization | NOT STARTED | no server-side membership enforcement |
 | BroadcastChannel chat | IMPLEMENTED | `src/services/channel.ts`, `src/App.tsx` |
-| Internet realtime | NOT STARTED | Supabase credentials/schema are absent |
+| Internet realtime integration | IN PROGRESS | Official Supabase client and Realtime subscription adapter exist; credentials, RLS and two-device tests are absent |
 | Pass & Play | TESTED LOCALLY | `src/pages/games/GamePlayPage.tsx` |
 | Six Questions | TESTED LOCALLY | pass-and-play UI and state |
 | Truth or Dare engine | TESTED LOCALLY | `src/games/tod.ts`, `src/games/tod.test.ts` |
