@@ -13,6 +13,13 @@ import { ChatMessage, MediaExpiry } from '@/types';
 import { isExpired } from '@/services/mediaExpiry';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import {
+  VideoRecorder,
+  VideoRecorderCamera,
+  VideoRecorderQuality,
+} from '@capacitor-community/video-recorder';
+import { VoiceRecorder } from '@independo/capacitor-voice-recorder';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -145,6 +152,31 @@ export const ChatPage: React.FC = () => {
       return;
     }
 
+    if (Capacitor.isNativePlatform() && mode === 'video') {
+      try {
+        await VideoRecorder.initialize({
+          camera: cameraFacing === 'user' ? VideoRecorderCamera.FRONT : VideoRecorderCamera.BACK,
+          quality: VideoRecorderQuality.MAX_720P,
+          autoShow: true,
+          previewFrames: [
+            {
+              id: 'afterdark-video-preview',
+              stackPosition: 'back',
+              width: 'fill',
+              height: 'fill',
+              borderRadius: 16,
+              mirrorFrontCam: cameraFacing === 'user',
+            },
+          ],
+        });
+        setIsCameraOpen(true);
+      } catch (error) {
+        console.error('Native video recorder error', error);
+        showToast('Video recording hardware or permissions unavailable', 'warning');
+      }
+      return;
+    }
+
     try {
       const constraints: MediaStreamConstraints = {
         video: { facingMode: cameraFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -208,6 +240,28 @@ export const ChatPage: React.FC = () => {
 
   // Video Recording Controls
   const startVideoRecording = () => {
+    if (Capacitor.isNativePlatform()) {
+      void (async () => {
+        try {
+          await VideoRecorder.startRecording();
+          setIsRecordingVideo(true);
+          const interval = setInterval(() => {
+            setVideoTimer((prev) => {
+              if (prev >= 60) {
+                stopVideoRecording();
+                clearInterval(interval);
+                return 60;
+              }
+              return prev + 1;
+            });
+          }, 1000);
+        } catch (error) {
+          console.error('Native video start error', error);
+          showToast('Could not start video recording', 'error');
+        }
+      })();
+      return;
+    }
     if (!mediaStream) return;
     recordedChunksRef.current = [];
     try {
@@ -242,6 +296,23 @@ export const ChatPage: React.FC = () => {
   };
 
   const stopVideoRecording = () => {
+    if (Capacitor.isNativePlatform()) {
+      void (async () => {
+        try {
+          const result = await VideoRecorder.stopRecording();
+          const response = await fetch(result.videoUrl);
+          const videoBlob = await response.blob();
+          setCapturedBlob(videoBlob);
+          setCapturedPreviewUrl(URL.createObjectURL(videoBlob));
+          await VideoRecorder.destroy();
+          setIsRecordingVideo(false);
+        } catch (error) {
+          console.error('Native video stop error', error);
+          showToast('Could not process the recorded video', 'error');
+        }
+      })();
+      return;
+    }
     if (mediaRecorderRef.current && isRecordingVideo) {
       mediaRecorderRef.current.stop();
       setIsRecordingVideo(false);
@@ -273,6 +344,24 @@ export const ChatPage: React.FC = () => {
 
   // Voice Note Recording
   const startAudioRecording = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const permission = await VoiceRecorder.requestAudioRecordingPermission();
+        if (!permission.value) {
+          showToast('Microphone access denied', 'warning');
+          return;
+        }
+        await VoiceRecorder.startRecording();
+        setIsRecordingAudio(true);
+        setAudioTimer(0);
+        const timerInterval = window.setInterval(() => setAudioTimer((timer) => timer + 1), 1000);
+        (window as Window & { afterdarkAudioInterval?: number }).afterdarkAudioInterval = timerInterval;
+      } catch (error) {
+        console.error('Native audio start error', error);
+        showToast('Could not start voice recording', 'error');
+      }
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
@@ -308,6 +397,36 @@ export const ChatPage: React.FC = () => {
   };
 
   const stopAudioRecording = () => {
+    if (Capacitor.isNativePlatform()) {
+      void (async () => {
+        try {
+          const interval = (window as Window & { afterdarkAudioInterval?: number }).afterdarkAudioInterval;
+          if (interval) window.clearInterval(interval);
+          const result = await VoiceRecorder.stopRecording();
+          const base64 = result.value.recordDataBase64;
+          const mime = result.value.mimeType || 'audio/m4a';
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+          const audioBlob = new Blob([bytes], { type: mime });
+          await sendMessage({
+            senderId: deviceId || 'me',
+            senderName: playerName,
+            content: '🎙️ Voice message',
+            type: 'voice',
+            blob: audioBlob,
+            mime,
+            roomCode,
+          });
+          setIsRecordingAudio(false);
+          showToast('Voice note sent', 'success');
+        } catch (error) {
+          console.error('Native audio stop error', error);
+          showToast('Could not save voice recording', 'error');
+        }
+      })();
+      return;
+    }
     if (audioRecorderRef.current && isRecordingAudio) {
       clearInterval((audioRecorderRef.current as any)._timer);
       audioRecorderRef.current.stop();
@@ -332,6 +451,33 @@ export const ChatPage: React.FC = () => {
     });
     showToast('Attachment sent', 'success');
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const openNativeGallery = async () => {
+    if (!Capacitor.isNativePlatform()) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      const result = await FilePicker.pickMedia({ readData: true, limit: 1 });
+      const file = result.files[0];
+      if (!file?.data) {
+        showToast('No media was selected', 'info');
+        return;
+      }
+      const binary = atob(file.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      const mime = file.mimeType || 'application/octet-stream';
+      const blob = new Blob([bytes], { type: mime });
+      setCapturedBlob(blob);
+      setCapturedPreviewUrl(URL.createObjectURL(blob));
+      setCameraMode(mime.includes('video') ? 'video' : 'photo');
+      setIsCameraOpen(true);
+    } catch (error) {
+      console.error('Native gallery error', error);
+      showToast('Gallery access denied or unavailable', 'warning');
+    }
   };
 
   // Text message send
@@ -809,7 +955,7 @@ export const ChatPage: React.FC = () => {
           <button
             onClick={() => {
               setShowAttachMenu(false);
-              fileInputRef.current?.click();
+              void openNativeGallery();
             }}
             className="p-3 rounded-xl bg-ad-bg-secondary border border-ad-burgundy/40 space-y-1 hover:border-ad-gold"
           >

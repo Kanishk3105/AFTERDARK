@@ -2,6 +2,9 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
 
+include ':capacitor-community-video-recorder'
+project(':capacitor-community-video-recorder').projectDir = new File('../node_modules/@capacitor-community/video-recorder/android')
+
 include ':capacitor-camera'
 project(':capacitor-camera').projectDir = new File('../node_modules/@capacitor/camera/android')
 
@@ -10,3 +13,9 @@ project(':capacitor-local-notifications').projectDir = new File('../node_modules
 
 include ':capacitor-push-notifications'
 project(':capacitor-push-notifications').projectDir = new File('../node_modules/@capacitor/push-notifications/android')
+
+include ':capawesome-capacitor-file-picker'
+project(':capawesome-capacitor-file-picker').projectDir = new File('../node_modules/@capawesome/capacitor-file-picker/android')
+
+include ':independo-capacitor-voice-recorder'
+project(':independo-capacitor-voice-recorder').projectDir = new File('../node_modules/@independo/capacitor-voice-recorder/android')
