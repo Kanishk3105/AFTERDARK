@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useToast } from '@/components/ui/Toast';
 import { ContentCard, IntensityLevel, MoodId } from '@/types';
+import { DedicatedGamePage } from '@/pages/games/DedicatedGamePage';
 
 export const GamePlayPage: React.FC = () => {
   const { moodId, gameId } = useParams<{ moodId: string; gameId: string }>();
@@ -197,6 +198,20 @@ export const GamePlayPage: React.FC = () => {
       setIsSpinning(false);
     }, 2000);
   };
+
+  const dedicatedGameIds = new Set([
+    'desire-match',
+    'temptations',
+    'emoji-confessions',
+    'fantasy-cards',
+    'scenario-builder',
+    'the-menu',
+    'challenge-duel',
+  ]);
+
+  if (dedicatedGameIds.has(gameId || '') && moodId) {
+    return <DedicatedGamePage gameId={gameId || ''} moodId={moodId} />;
+  }
 
   return (
     <div className="min-h-screen px-4 pt-4 pb-12 max-w-md mx-auto flex flex-col justify-between">
