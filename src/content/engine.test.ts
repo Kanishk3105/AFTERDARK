@@ -87,6 +87,6 @@ describe('No-Repetition Content Engine', () => {
 
   it('supports large catalog generation matching the scaling requirement', () => {
     const total = totalCatalogueSize();
-    expect(total).toBeGreaterThan(100);
+    expect(total).toBeGreaterThanOrEqual(10_000);
   });
 });
