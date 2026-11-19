@@ -31,3 +31,17 @@ service-role key to `VITE_*` variables or frontend source.
 6. Test with two physical devices.
 
 No credentials or live backend connection are currently available in this repository.
+
+## Android debug build
+
+The Android project requires JDK 21 and an installed Android SDK.
+
+```powershell
+npm run android:sync
+$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
+$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
+cd android
+.\gradlew.bat assembleDebug
+```
+
+The generated APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`.

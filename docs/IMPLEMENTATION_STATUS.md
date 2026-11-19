@@ -21,13 +21,13 @@ INTEGRATION TESTED, or COMPLETE.
 | Sexual dedicated engines | IN PROGRESS | shared prompt UI is insufficient for independent engines |
 | Fantasy dedicated engines | IN PROGRESS | story and roulette have partial implementations |
 | AES-GCM chat wrapper | TESTED LOCALLY | `src/security/crypto.ts` |
-| Camera/photo/video UI | IMPLEMENTED | `src/pages/chat/ChatPage.tsx` |
-| Native Capacitor camera | NOT STARTED | no Android project or native plugins |
+| Camera/photo/video UI | TESTED LOCALLY | `src/pages/chat/ChatPage.tsx` |
+| Native Capacitor photo camera | TESTED LOCALLY | Capacitor Camera plugin and Android manifest |
 | Disappearing media lifecycle | IN PROGRESS | expiry metadata exists; server/local enforcement is incomplete |
 | Trophy cabinet | TESTED LOCALLY | `src/stores/trophy.store.ts` |
 | No-repeat content engine | TESTED LOCALLY | `src/content/engine.ts`, history in IndexedDB |
 | 10,000-experience catalogue | NOT STARTED | current catalogue is generated but below target |
 | Supabase migrations | NOT STARTED | no migration files or credentials |
 | Push notifications | NOT STARTED | no native notification integration |
-| Android APK | NOT STARTED | no `android/` project |
+| Android APK | TESTED LOCALLY | Capacitor Android project produces a debug APK with JDK 21 |
 | Documentation | IN PROGRESS | permanent docs being completed |
