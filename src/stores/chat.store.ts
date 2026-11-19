@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { db } from '@/data/db';
 import { seal } from '@/security/crypto';
 import { publish } from '@/services/channel';
+import { expiresAt as mediaExpiresAt } from '@/services/mediaExpiry';
 import { ChatMessage, MediaExpiry, MessageType } from '@/types';
 
 interface SendParams {
@@ -108,6 +109,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       mediaExpiry,
       previewLabel,
       replyToId,
+      expiresAt: mediaExpiry ? mediaExpiresAt(mediaExpiry) : undefined,
       reactions: {},
       status: 'sent',
       createdAt: new Date().toISOString(),
@@ -177,6 +179,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   markViewed: async (messageId) => {
     const current = get().messages.find((msg) => msg.id === messageId);
     if (!current) return;
+    const isViewOnce = current.mediaExpiry === 'view-once';
+    if (isViewOnce) {
+      await get().deleteMessage(messageId);
+      return;
+    }
     const updated = { ...current, viewed: true };
     set((state) => ({
       messages: state.messages.map((msg) => (msg.id === messageId ? updated : msg)),

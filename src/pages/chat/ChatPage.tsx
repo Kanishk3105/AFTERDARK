@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { ChatMessage, MediaExpiry } from '@/types';
+import { isExpired } from '@/services/mediaExpiry';
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +27,8 @@ export const ChatPage: React.FC = () => {
   const addReaction = useChatStore((s) => s.addReaction);
   const deleteMessage = useChatStore((s) => s.deleteMessage);
   const markRead = useChatStore((s) => s.markRead);
+  const markViewed = useChatStore((s) => s.markViewed);
+  const expireMessage = useChatStore((s) => s.expireMessage);
 
   // Input states
   const [inputText, setInputText] = useState('');
@@ -68,6 +71,20 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     markRead();
   }, [markRead]);
+
+  useEffect(() => {
+    const checkExpiry = () => {
+      messages.forEach((message) => {
+        if (message.deleted) return;
+        if (isExpired(message.expiresAt, Date.now(), message.viewed)) {
+          void expireMessage(message.id);
+        }
+      });
+    };
+    checkExpiry();
+    const interval = window.setInterval(checkExpiry, 1_000);
+    return () => window.clearInterval(interval);
+  }, [messages, expireMessage]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -401,6 +418,7 @@ export const ChatPage: React.FC = () => {
                       if (record?.blob) {
                         setViewingMediaUrl(URL.createObjectURL(record.blob));
                         setViewingMediaMime(record.mime);
+                        await markViewed(msg.id);
                       }
                     }}
                   >
