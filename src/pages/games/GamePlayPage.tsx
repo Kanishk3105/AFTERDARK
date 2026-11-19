@@ -68,6 +68,11 @@ export const GamePlayPage: React.FC = () => {
 
   // Story Mode State
   const [storyNodeId, setStoryNodeId] = useState<string>('start');
+  useEffect(() => {
+    if (gameId !== 'choose-your-story') return;
+    const saved = activeSession?.engine as { storyNodeId?: string } | undefined;
+    if (saved?.storyNodeId && STORY[saved.storyNodeId]) setStoryNodeId(saved.storyNodeId);
+  }, [gameId, activeSession?.engine]);
 
   // Truth or Dare Engine State
   const [todState, setTodState] = useState<TodModel>(() => createTod('adventure'));
@@ -200,7 +205,14 @@ export const GamePlayPage: React.FC = () => {
   };
 
   const dedicatedGameIds = new Set([
+    'love-quiz',
+    'memory-lane',
+    'love-language',
+    'couple-challenges',
+    'romantic-roulette',
     'desire-match',
+    'naughty-roulette',
+    'desire-quiz',
     'temptations',
     'emoji-confessions',
     'fantasy-cards',
@@ -1005,7 +1017,10 @@ export const GamePlayPage: React.FC = () => {
                     variant={idx === 0 ? 'primary' : 'secondary'}
                     fullWidth
                     size="md"
-                    onClick={() => setStoryNodeId(choice.next)}
+                    onClick={() => {
+                      setStoryNodeId(choice.next);
+                      useGameStore.getState().patchSession({ engine: { storyNodeId: choice.next } });
+                    }}
                   >
                     {choice.label} ➔
                   </Button>

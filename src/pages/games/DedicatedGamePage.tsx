@@ -38,10 +38,11 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     boundary: 'Nothing without an explicit yes',
   });
 
-  const isPrivateChoice = ['desire-match', 'fantasy-cards', 'love-language', 'the-menu'].includes(gameId);
+  const isPrivateChoice = ['love-quiz', 'love-language', 'desire-match', 'desire-quiz', 'fantasy-cards', 'the-menu'].includes(gameId);
   const isDuel = ['challenge-duel', 'couple-challenges', 'memory-lane', 'scenario-builder'].includes(gameId);
   const isTemptation = gameId === 'temptations';
   const isEmoji = gameId === 'emoji-confessions';
+  const isRoulette = ['romantic-roulette', 'naughty-roulette', 'fantasy-roulette'].includes(gameId);
   const currentPrompt = preference.rounds[preference.roundIndex]?.prompt || 'Choose together.';
 
   const matchCount = useMemo(
@@ -208,6 +209,25 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
             />
           ))}
           <Button fullWidth onClick={finishGame}>Send for Partner Approval</Button>
+        </Card>
+      )}
+
+      {isRoulette && (
+        <Card variant="glass" className="p-6 space-y-5 text-center">
+          <h2 className="font-display text-lg">Roulette</h2>
+          <div className="w-36 h-36 mx-auto rounded-full border-4 border-dashed border-ad-gold/60 flex items-center justify-center text-5xl">
+            🎰
+          </div>
+          <Button
+            fullWidth
+            onClick={() => {
+              setCustomText(`Spin result ${preference.roundIndex + 1}: ${currentPrompt}`);
+              setPreference((model) => nextPreferenceRound(model));
+            }}
+          >
+            Spin and Reveal
+          </Button>
+          {customText && <p className="text-sm text-ad-text leading-relaxed">{customText}</p>}
         </Card>
       )}
 
