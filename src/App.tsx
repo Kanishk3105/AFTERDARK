@@ -23,6 +23,7 @@ import { subscribe } from '@/services/channel';
 import { useChatStore } from '@/stores/chat.store';
 import { subscribeRemoteRoom } from '@/services/sync';
 import type { ChatMessage } from '@/types';
+import { initializeNotifications } from '@/services/notifications';
 
 function App() {
   const location = useLocation();
@@ -30,6 +31,7 @@ function App() {
 
   useEffect(() => {
     hydrate();
+    void initializeNotifications();
     const unsubscribe = subscribe((envelope) => {
       if (envelope.type !== 'chat') return;
       const roomCode = useAppStore.getState().roomCode;

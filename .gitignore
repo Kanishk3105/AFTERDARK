@@ -13,3 +13,5 @@ android/app/build/
 *.apk
 *.jks
 *.keystore
+supabase/.temp/
+supabase/.branches/

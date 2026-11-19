@@ -171,6 +171,74 @@ export const SettingsPage: React.FC = () => {
         </div>
       </Card>
 
+      {/* Notifications */}
+      <Card variant="solid" className="p-4 space-y-3.5 border-ad-burgundy/40">
+        <h2 className="font-display text-sm font-bold text-ad-gold uppercase tracking-wider flex items-center gap-1.5">
+          <span>🔔</span> <span>Notifications</span>
+        </h2>
+        <div className="space-y-2.5 text-xs">
+          {([
+            ['messages', 'Chat messages'],
+            ['gameInvites', 'Game invitations and turns'],
+            ['partnerActivity', 'Partner activity'],
+            ['trophies', 'Trophy unlocks'],
+            ['sound', 'Notification sound'],
+            ['vibration', 'Vibration'],
+          ] as const).map(([key, label]) => (
+            <label key={key} className="flex items-center justify-between cursor-pointer">
+              <span className="text-ad-text">{label}</span>
+              <input
+                type="checkbox"
+                checked={preferences.notifications[key]}
+                onChange={(e) =>
+                  updatePreferences({
+                    notifications: {
+                      ...preferences.notifications,
+                      [key]: e.target.checked,
+                    },
+                  })
+                }
+                className="rounded border-ad-burgundy/40 text-ad-red h-4 w-4 bg-ad-bg"
+              />
+            </label>
+          ))}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <label className="space-y-1">
+              <span className="text-[10px] text-ad-text-secondary">Quiet hours start</span>
+              <input
+                type="time"
+                value={preferences.notifications.quietHoursStart || ''}
+                onChange={(e) =>
+                  updatePreferences({
+                    notifications: {
+                      ...preferences.notifications,
+                      quietHoursStart: e.target.value || undefined,
+                    },
+                  })
+                }
+                className="w-full bg-ad-bg border border-ad-burgundy/40 rounded-xl px-2 py-1.5 text-xs"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-[10px] text-ad-text-secondary">Quiet hours end</span>
+              <input
+                type="time"
+                value={preferences.notifications.quietHoursEnd || ''}
+                onChange={(e) =>
+                  updatePreferences({
+                    notifications: {
+                      ...preferences.notifications,
+                      quietHoursEnd: e.target.value || undefined,
+                    },
+                  })
+                }
+                className="w-full bg-ad-bg border border-ad-burgundy/40 rounded-xl px-2 py-1.5 text-xs"
+              />
+            </label>
+          </div>
+        </div>
+      </Card>
+
       {/* 3. Gameplay Preferences & Excluded Topics */}
       <Card variant="solid" className="p-4 space-y-3.5 border-ad-burgundy/40">
         <h2 className="font-display text-sm font-bold text-ad-gold uppercase tracking-wider flex items-center gap-1.5">
