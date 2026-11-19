@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0B0508;
+    --color-bg-secondary: #19090F;
+    --color-burgundy: #460B1B;
+    --color-red: #8B1732;
+    --color-gold: #D5AA6D;
+    --color-text: #F5E9EC;
+    --color-text-secondary: #BA9BA4;
+  }
+
+  ::selection {
+    background-color: rgba(139, 23, 50, 0.4);
+    color: #F5E9EC;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-burgundy);
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-gradient-to-b from-ad-burgundy/20 to-ad-bg/80 backdrop-blur-md border border-ad-burgundy/30 rounded-2xl;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-ad-red/50 hover:shadow-lg hover:shadow-ad-red/10;
+  }
+
+  .btn-primary {
+    @apply bg-ad-red text-ad-text font-body font-semibold py-3 px-6 rounded-xl 
+           transition-all duration-300 active:scale-95
+           shadow-lg shadow-ad-red/20 hover:shadow-ad-red/40 hover:bg-ad-red/90;
+  }
+
+  .btn-secondary {
+    @apply border border-ad-gold/40 text-ad-gold font-body font-medium py-3 px-6 rounded-xl
+           transition-all duration-300 active:scale-95
+           hover:bg-ad-gold/10 hover:border-ad-gold/60;
+  }
+
+  .btn-ghost {
+    @apply text-ad-text-secondary font-body py-2 px-4 rounded-lg
+           transition-all duration-200 active:scale-95
+           hover:bg-ad-burgundy/20 hover:text-ad-text;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-ad-gold via-yellow-200 to-ad-gold bg-clip-text text-transparent;
+  }
+
+  .input-field {
+    @apply w-full bg-ad-bg-secondary/60 border border-ad-burgundy/30 rounded-xl px-4 py-3
+           text-ad-text font-body placeholder:text-ad-text-secondary/50
+           focus:outline-none focus:border-ad-red/60 focus:ring-1 focus:ring-ad-red/30
+           transition-all duration-200;
+  }
+
+  .mood-card {
+    @apply relative overflow-hidden rounded-2xl p-6 cursor-pointer
+           transition-all duration-500 active:scale-[0.97]
+           border border-transparent;
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center justify-center gap-1 py-2 px-3
+           text-ad-text-secondary transition-all duration-200;
+  }
+
+  .nav-item-active {
+    @apply text-ad-gold;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-gold {
+    @apply badge bg-ad-gold/15 text-ad-gold border border-ad-gold/30;
+  }
+
+  .badge-red {
+    @apply badge bg-ad-red/15 text-ad-red border border-ad-red/30;
+  }
+
+  .toast {
+    @apply fixed bottom-20 left-1/2 -translate-x-1/2 z-50
+           glass-card px-6 py-3 rounded-xl shadow-2xl
+           animate-slide-up;
+  }
+
+  .progress-bar {
+    @apply h-1.5 bg-ad-burgundy/30 rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full bg-gradient-to-r from-ad-red to-ad-gold rounded-full transition-all duration-500;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+@layer utilities {
+  .text-shadow-glow {
+    text-shadow: 0 0 20px rgba(139, 23, 50, 0.5), 0 0 40px rgba(139, 23, 50, 0.3);
+  }
+
+  .text-shadow-gold {
+    text-shadow: 0 0 15px rgba(213, 170, 109, 0.4);
+  }
+}
