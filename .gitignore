@@ -1,0 +1,12 @@
+# afterdark
+
+node_modules/
+dist/
+.env
+.env.local
+.env.production
+*.pem
+*.key
+android/app/google-services.json
+*.jks
+*.keystore

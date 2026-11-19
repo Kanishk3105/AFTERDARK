@@ -7,6 +7,13 @@ export const APP_CONFIG = {
   secondaryTagline: 'YOUR ROOM. YOUR RULES. YOUR ADVENTURE.',
   version: '0.1.0',
   minAge: 18,
+  /**
+   * Private builds keep every mood, including SEXUAL.
+   * A public-store build filters cards marked ineligible for store distribution
+   * without renaming or deleting the category.
+   */
+  distribution: 'private' as 'private' | 'public',
+  contentPackVersion: '2026.11.1',
 } as const;
 
 export const COLORS = {
@@ -346,7 +353,7 @@ export const MOODS: MoodConfig[] = [
 
 // Navigation items
 export const NAV_ITEMS = [
-  { id: 'home', label: 'HOME', icon: '🏠', path: '/' },
+  { id: 'home', label: 'HOME', icon: '🏠', path: '/home' },
   { id: 'games', label: 'GAMES', icon: '🎮', path: '/games' },
   { id: 'chat', label: 'CHAT', icon: '💬', path: '/chat' },
   { id: 'trophies', label: 'TROPHIES', icon: '🏆', path: '/trophies' },

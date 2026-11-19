@@ -1,0 +1,92 @@
+import { describe, it, expect } from 'vitest';
+import {
+  fingerprint,
+  jaccard,
+  selectNext,
+  selectMany,
+  totalCatalogueSize,
+} from './engine';
+
+describe('No-Repetition Content Engine', () => {
+  it('computes consistent fingerprints regardless of stop-words and casing', () => {
+    const fp1 = fingerprint('What is your secret desire tonight?');
+    const fp2 = fingerprint('SECRET DESIRE TONIGHT');
+    expect(fp1).toBe(fp2);
+  });
+
+  it('calculates Jaccard similarity between two fingerprints accurately', () => {
+    const simExact = jaccard('secret desire', 'secret desire');
+    expect(simExact).toBe(1);
+
+    const simDiff = jaccard('apple banana', 'orange grape');
+    expect(simDiff).toBe(0);
+
+    const simPartial = jaccard('kiss slow tender', 'kiss slow urgent');
+    expect(simPartial).toBeGreaterThan(0.4);
+  });
+
+  it('selects valid content cards for games', () => {
+    const res = selectNext({
+      gameId: 'six-questions',
+      intensity: 'spicy',
+      excludedTopics: [],
+      history: [],
+      fingerprints: [],
+    });
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.card.gameId).toBe('six-questions');
+      expect(res.card.prompt).toBeTruthy();
+      expect(res.card.answerChoices?.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('strictly excludes previously encountered cards in history', () => {
+    const res1 = selectNext({
+      gameId: 'would-you-rather',
+      intensity: 'mild',
+      excludedTopics: [],
+      history: [],
+      fingerprints: [],
+    });
+
+    expect(res1.ok).toBe(true);
+    if (res1.ok) {
+      const seenId = res1.card.id;
+      // Now request again with seenId in history
+      const res2 = selectNext({
+        gameId: 'would-you-rather',
+        intensity: 'mild',
+        excludedTopics: [],
+        history: [seenId],
+        fingerprints: [res1.card.similarityFingerprint],
+      });
+
+      expect(res2.ok).toBe(true);
+      if (res2.ok) {
+        expect(res2.card.id).not.toBe(seenId);
+      }
+    }
+  });
+
+  it('respects excluded user topics and boundaries', () => {
+    const res = selectNext({
+      gameId: 'six-questions',
+      intensity: 'spicy',
+      excludedTopics: ['arguments', 'conflict'],
+      history: [],
+      fingerprints: [],
+    });
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.card.tags).not.toContain('arguments');
+    }
+  });
+
+  it('supports large catalog generation matching the scaling requirement', () => {
+    const total = totalCatalogueSize();
+    expect(total).toBeGreaterThan(100);
+  });
+});
