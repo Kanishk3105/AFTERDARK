@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(28);
 set local role authenticated;
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);
@@ -150,11 +150,35 @@ select public.complete_media_view(
   '30000000-0000-4000-8000-000000000002'
 );
 set local role service_role;
+select diag(coalesce(
+  (select format('media expiry policy=%s viewed_at=%s expires_at=%s',
+    expiry_policy, viewed_at, expires_at)
+   from public.media_records
+   where id = '20000000-0000-4000-8000-000000000002'),
+  'five-second media record is not visible to service_role'
+));
+select is(
+  (select expiry_policy from public.media_records
+   where id = '20000000-0000-4000-8000-000000000002'),
+  '5s',
+  'test media retains the five-second expiry policy'
+);
 select ok(
-  (select expires_at > now() and expires_at <= now() + interval '5 seconds'
+  coalesce((select viewed_at is not null from public.media_records
+            where id = '20000000-0000-4000-8000-000000000002'), false),
+  'server records the completed first view'
+);
+select ok(
+  coalesce((select expires_at is not null from public.media_records
+            where id = '20000000-0000-4000-8000-000000000002'), false),
+  'server persists timed media expiry metadata'
+);
+select ok(
+  coalesce((select expires_at > viewed_at
+       and expires_at <= viewed_at + interval '5 seconds'
    from public.media_records
    where id = '20000000-0000-4000-8000-000000000002'
-     and viewed_at is not null),
+     and viewed_at is not null), false),
   'server starts the five-second timer on first view'
 );
 set local role authenticated;
