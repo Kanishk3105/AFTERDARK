@@ -78,6 +78,34 @@ export async function revokeRemoteRoom(roomId: string): Promise<boolean> {
   return true;
 }
 
+export async function deleteRemoteRoom(roomId: string): Promise<'deleted' | 'queued' | false> {
+  const client = getRemoteClient();
+  if (!client || roomId.startsWith('room-')) return false;
+  await ensureRemoteIdentity();
+  const { data, error } = await client.functions.invoke('room-delete', {
+    body: { action: 'request', roomId },
+  });
+  if (error) throw error;
+  if (!data || data.requested !== true || typeof data.completed !== 'boolean') {
+    throw new Error('Room deletion service returned an invalid status.');
+  }
+  return data.completed ? 'deleted' : 'queued';
+}
+
+export async function assertRemoteContentEnabled(roomId: string): Promise<void> {
+  const client = getRemoteClient();
+  if (!client || roomId.startsWith('room-')) return;
+  const { data, error } = await client
+    .from('rooms')
+    .select('e2ee_protocol')
+    .eq('id', roomId)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.e2ee_protocol !== 'MLSv1') {
+    throw new Error('Remote private content is disabled until authenticated end-to-end encryption is available.');
+  }
+}
+
 export async function uploadRemoteMedia(
   roomId: string,
   mediaId: string,
@@ -236,10 +264,9 @@ export async function subscribeRemoteRoom(
 }
 
 /**
- * Internet play is designed for Supabase Realtime.
- * Transport encryption from Supabase is not end-to-end encryption.
- * Message bodies are sealed on-device with AES-GCM before they would be relayed.
- * This build does not claim a live relay until credentials exist and a connection test passes.
+ * Remote private content is server-disabled until an authenticated E2EE
+ * implementation and authoritative game synchronization are available.
+ * Local AES-GCM storage is not end-to-end encryption.
  */
 export function getSyncStatus(): SyncStatus {
   const url = import.meta.env.VITE_SUPABASE_URL;
@@ -254,7 +281,7 @@ export function getSyncStatus(): SyncStatus {
   return {
     state: 'configured-unverified',
     reason:
-      'Supabase credentials are present. This session has not completed a live connection test, so Anywhere play stays unavailable until that test passes.',
+      'Supabase credentials are present, but remote private content and Anywhere play are disabled until authenticated end-to-end encryption and authoritative game synchronization are available.',
   };
 }
 

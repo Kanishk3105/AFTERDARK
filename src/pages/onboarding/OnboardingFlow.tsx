@@ -9,8 +9,13 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useToast } from '@/components/ui/Toast';
-import { createRoomCode, createRoomId, inviteLink, encodeInvite } from '@/services/pairing';
-import { exportRoomKey } from '@/security/crypto';
+import {
+  createInvitationCode,
+  createRoomCode,
+  createRoomId,
+  inviteLink,
+  encodeInvite,
+} from '@/services/pairing';
 import { noteRoomCreated } from '@/games/awards';
 import { CoupleConfig, IntensityLevel } from '@/types';
 import { createRemoteRoom } from '@/services/sync';
@@ -89,8 +94,10 @@ export const OnboardingFlow: React.FC = () => {
     try {
       ensureDeviceId();
       const code = createRoomCode(6);
+      const invitationCode = createInvitationCode();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
-      const newRoomId = await createRemoteRoom(code, code, expiresAt) ?? createRoomId();
+      const remoteRoomId = await createRemoteRoom(code, invitationCode, expiresAt);
+      const newRoomId = remoteRoomId ?? createRoomId();
 
       setRoomId(newRoomId, code);
       void registerStoredPushToken().catch((error: unknown) => {
@@ -99,20 +106,21 @@ export const OnboardingFlow: React.FC = () => {
       setInvite(code, expiresAt);
       noteRoomCreated();
 
-      const jwkKey = await exportRoomKey();
-      const token = encodeInvite({
-        v: 1,
-        code,
-        exp: Date.now() + 24 * 60 * 60 * 1000,
-        key: jwkKey,
-        host: nick,
-      });
-
-      const fullLink = inviteLink(token, Capacitor.isNativePlatform());
-      setGeneratedInviteUrl(fullLink);
+      if (remoteRoomId) {
+        const token = encodeInvite({
+          v: 2,
+          code: invitationCode,
+          roomCode: code,
+          exp: Date.parse(expiresAt),
+        });
+        setGeneratedInviteUrl(inviteLink(token, Capacitor.isNativePlatform()));
+      } else {
+        setGeneratedInviteUrl('');
+        showToast('Online pairing requires a configured Supabase project.', 'warning');
+      }
     } catch (err) {
       console.error('Room generation error', err);
-      showToast('Could not initialize room key, using local mode', 'warning');
+      showToast('Could not create a remote invitation. The room remains local.', 'warning');
     } finally {
       setIsGeneratingRoom(false);
     }
@@ -123,13 +131,17 @@ export const OnboardingFlow: React.FC = () => {
       navigator.clipboard.writeText(generatedInviteUrl);
       showToast('Invitation link copied to clipboard', 'success');
     } else {
-      showToast(`Pairing code: ${roomCode}`, 'info');
+      showToast('Online pairing is unavailable until Supabase is configured.', 'warning');
     }
   };
 
   const shareWhatsApp = () => {
+    if (!generatedInviteUrl) {
+      showToast('Online pairing is unavailable until Supabase is configured.', 'warning');
+      return;
+    }
     const text = encodeURIComponent(
-      `Join me in our private AFTERDARK room. Tap this link to connect: ${generatedInviteUrl || `Room code: ${roomCode}`}`
+      `Join me in our AFTERDARK room. Tap this single-use invitation to pair: ${generatedInviteUrl}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
@@ -362,7 +374,7 @@ export const OnboardingFlow: React.FC = () => {
                   {roomCode || 'AD6X9Y'}
                 </div>
                 <div className="text-[10px] text-ad-text-secondary/70">
-                  Time-limited · Single-use pairing key
+                  Room code · Invitations are single-use and expire after 24 hours
                 </div>
               </Card>
             </motion.div>
@@ -387,15 +399,21 @@ export const OnboardingFlow: React.FC = () => {
               </div>
 
               {/* QR Code Container */}
-              <div className="p-4 rounded-2xl bg-white/95 inline-block shadow-2xl border-4 border-ad-burgundy/50 mx-auto">
-                <QRCodeSVG
-                  value={generatedInviteUrl || `https://afterdark.app/join#${roomCode}`}
-                  size={150}
-                  bgColor="#ffffff"
-                  fgColor="#0B0508"
-                  level="M"
-                />
-              </div>
+              {generatedInviteUrl ? (
+                <div className="p-4 rounded-2xl bg-white/95 inline-block shadow-2xl border-4 border-ad-burgundy/50 mx-auto">
+                  <QRCodeSVG
+                    value={generatedInviteUrl}
+                    size={150}
+                    bgColor="#ffffff"
+                    fgColor="#0B0508"
+                    level="M"
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-ad-text-secondary">
+                  Remote pairing is unavailable until Supabase is configured.
+                </p>
+              )}
 
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -437,7 +455,7 @@ export const OnboardingFlow: React.FC = () => {
                   <span>Privacy Notice</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  Every challenge, message, and photo stays between the two of you. Disappearing media timers and explicit camera consent are strictly enforced.
+                  Local content is stored on this device. Remote messages, games and media remain disabled until an audited end-to-end encryption protocol is integrated. Camera use requires explicit permission.
                 </p>
               </Card>
             </motion.div>

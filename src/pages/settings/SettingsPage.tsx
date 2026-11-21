@@ -5,7 +5,7 @@ import { useGameStore } from '@/stores/game.store';
 import { useChatStore } from '@/stores/chat.store';
 import { useTrophyStore } from '@/stores/trophy.store';
 import { APP_CONFIG } from '@/config/app.config';
-import { getSyncStatus, revokeRemoteRoom, revokeRemotePushToken } from '@/services/sync';
+import { deleteRemoteRoom, getSyncStatus, revokeRemotePushToken } from '@/services/sync';
 import { totalCatalogueSize } from '@/content/engine';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -108,7 +108,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleConfirmUnpair = async () => {
     try {
-      const remotelyRevoked = await revokeRemoteRoom(roomId);
+      const remoteDeletion = await deleteRemoteRoom(roomId);
       await clearAllMessages();
       await clearHistory();
       resetTrophies();
@@ -116,7 +116,11 @@ export const SettingsPage: React.FC = () => {
       resetAll();
       setShowUnpairModal(false);
       showToast(
-        remotelyRevoked ? 'Room access revoked and local pairing reset' : 'Local pairing reset',
+        remoteDeletion === 'deleted'
+          ? 'Room data permanently deleted and local pairing reset'
+          : remoteDeletion === 'queued'
+            ? 'Room access revoked; permanent deletion is queued for cleanup'
+            : 'Local pairing reset',
         'info',
       );
       navigate('/');
@@ -407,7 +411,7 @@ export const SettingsPage: React.FC = () => {
       >
         <div className="space-y-4 text-xs text-left">
           <p className="text-ad-text-secondary leading-relaxed">
-            Are you sure you want to unpair? This will reset your room configuration and local credentials. Your partner will also be disconnected.
+            This immediately revokes both devices and queues permanent deletion of room data and uploaded media. The cleanup job retries storage failures; local credentials are also reset.
           </p>
           <div className="flex gap-2 pt-2">
             <Button

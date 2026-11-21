@@ -3,7 +3,12 @@ import { db } from '@/data/db';
 import { seal, sealBytes } from '@/security/crypto';
 import { publish } from '@/services/channel';
 import { expiresAt as mediaExpiresAt } from '@/services/mediaExpiry';
-import { getRemoteClient, notifyRemotePartner, uploadRemoteMedia } from '@/services/sync';
+import {
+  assertRemoteContentEnabled,
+  getRemoteClient,
+  notifyRemotePartner,
+  uploadRemoteMedia,
+} from '@/services/sync';
 import { ensureRemoteIdentity } from '@/services/sync';
 import { useAppStore } from '@/stores/app.store';
 import { ChatMessage, MediaExpiry, MessageType } from '@/types';
@@ -74,6 +79,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     previewLabel,
     roomCode,
   }) => {
+    const activeRoomId = useAppStore.getState().roomId;
+    if (roomCode && activeRoomId && !activeRoomId.startsWith('room-') && getRemoteClient()) {
+      await assertRemoteContentEnabled(activeRoomId);
+    }
+
     let encryption: ChatMessage['encryption'] = 'plaintext';
     let sealedContent: string | undefined;
     let storedContent = content;

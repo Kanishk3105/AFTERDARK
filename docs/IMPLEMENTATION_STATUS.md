@@ -59,14 +59,14 @@ duplicates and the full catalogue threshold.
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Tested | `npm test`; latest run: 49 tests passed across 9 files. |
-| Supabase schema and local configuration | Tested in isolated GitHub CI; not locally run | Versioned migrations, RLS, Edge Functions, local `config.toml` and pgTAP media/room tests exist. The successful GitHub Actions run reset local Supabase, applied every migration, passed all 28 pgTAP assertions and all 7 Deno adapter tests. Docker Desktop's Linux engine is unavailable in this workstation session. |
-| Supabase remote chat | Implemented but externally unverified | Authenticated room RPCs, message subscription and encrypted media upload/view endpoints are wired. Live two-phone relay and offline retry are unverified. Full game-state sync is not implemented; Anywhere mode remains disabled. |
-| Room deletion | Incomplete | Revocation blocks access and queues media for cleanup, but archived room/chat/game metadata is not physically purged. |
-| Photo/video/gallery/voice | Implemented but device-unverified | Native plugins compile; capture/gallery/voice now show preview before explicit send. Media bytes are sealed locally and for remote upload. No physical device or emulator is attached. |
-| Disappearing media | Reservation/completion flow implemented and database-tested | Expiring media uses a two-minute atomic reservation, stable-token retries, idempotent completion, release on failed download/decryption and server-started expiry. Consumed/expired metadata and objects are removed by scheduled cleanup. The 28-assertion pgTAP suite passed in isolated Supabase CI, including contention, completion replay, release/retry and expiry. Live Storage delivery and production scheduling remain unverified. |
-| FCM notifications | Deterministic server adapter tested; live dispatch incomplete | Native registration/token refresh/revocation, privacy-safe generic payloads, preference/quiet-hours filtering and bounded retries for transient FCM errors are wired. Five deterministic tests passed for categories, quiet hours, privacy, retries and stale-token detection; SQL tests cover token refresh, deletion and unpairing. Game, invitation, turn, trophy and presence event producers are not all wired; real delivery remains Firebase/device-unverified. |
-| End-to-end encryption | Incomplete; do not market as E2EE | The invite still transports a shared raw room key. A protocol/library assessment and threat model are documented in [the crypto assessment](./CRYPTO_PROTOCOL_ASSESSMENT.md); no reviewed library found in that assessment supports both required client platforms with an appropriate supported API. Authenticated pairing, independent sessions, forward secrecy, replay protection, revocation/key rotation and independent-device crypto tests remain missing. |
+| Unit tests | Tested | `npm test`; latest run: 52 tests passed across 9 files. |
+| Supabase schema and local configuration | Existing baseline tested; new migrations pending CI | The prior GitHub Actions run passed 28 pgTAP assertions and 7 Deno tests. This change adds fail-closed remote-content and permanent-deletion migrations, expands pgTAP to 41 assertions and Deno adapter coverage to 12 tests. Docker is unavailable locally; the updated Supabase workflow must pass before these new database assertions are considered verified. |
+| Supabase remote content | Disabled until E2EE is integrated | The new migration defaults rooms to `e2ee_protocol = 'disabled'`, revokes unused legacy invitations and blocks chat reads/writes, media creation/retrieval, and direct game-session access through server-side policies. Online room invitations no longer contain a room key; legacy v1 links are rejected. Live secure messaging is not available. |
+| Room deletion | Implemented; live Storage/scheduler verification pending | Owner-authenticated deletion immediately revokes both members, invitations, push tokens and notifications. A retryable service-role job removes all room Storage objects before cascading room metadata, chat, games, history, media records and credentials. Deterministic retry tests and pgTAP deletion checks are included; production scheduler execution remains unverified. |
+| Photo/video/gallery/voice | Local capture and preview implemented; device-unverified | Native plugins compile; capture/gallery/voice show preview before explicit send. Encrypted remote upload code is present, but remote transfer is server-disabled until E2EE is integrated. No physical device or emulator is attached. |
+| Disappearing media | Reservation and upload integrity implemented; remote media gated | Expiring media uses a two-minute atomic reservation, stable-token retries, idempotent completion, release on failed download/decryption and server-started expiry. Encrypted uploads are stream-limited, bound to an immutable SHA-256/size per media ID, and safely retryable without overwrite. Remote transfer remains server-disabled until E2EE is integrated. Scheduled storage cleanup still requires live deployment verification. |
+| FCM notifications | Deterministic server adapter tested; live dispatch incomplete | Native registration/token refresh/revocation, privacy-safe generic payloads, preference/quiet-hours filtering and bounded retries for transient FCM errors are wired. Five deterministic tests cover categories, quiet hours, privacy, retries and stale-token detection; SQL tests cover token refresh, deletion and unpairing. Game, invitation, turn, trophy and presence event producers are not all wired; real delivery remains Firebase/device-unverified. |
+| End-to-end encryption | Incomplete; do not market as E2EE | New invitation payloads omit key material and pending legacy invitations are revoked. RFC 9420 MLS and `ts-mls` are assessed in [the crypto assessment](./CRYPTO_PROTOCOL_ASSESSMENT.md), but the cross-platform TypeScript implementation has no formal security audit and a high-severity pre-1.6.4 removal defect. Authenticated key lifecycle, independent sessions, forward secrecy, replay/revocation tests and secure persistence remain incomplete; remote private content is gated off. |
 | Android debug build | Tested | Fresh `npm run android:assemble` passed using JDK 21. APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Android custom-scheme invite handling is wired but not device-tested. |
 | Android release configuration | Tested without release credentials | Unsigned `bundleRelease` task passed. Signing is conditional on the four `AFTERDARK_RELEASE_*` environment variables; the bundle is not ready for distribution until signed and verified with the owner-controlled key. |
 | Physical two-phone use | Not tested | ADB found no connected emulator or phone. No live Supabase project credentials are configured. |
@@ -77,18 +77,17 @@ testing. It intentionally records physical-device checks as pending.
 
 ## Engineering work still incomplete (not owner-side setup)
 
-- Select and integrate a maintained, reviewed protocol library with supported
-  React/browser and Capacitor Android APIs; remove shared-key URL transport and
-  implement the complete protocol/key lifecycle before sending sensitive
-  content remotely.
+- Select and integrate a maintained, reviewed protocol implementation with
+  supported React/browser and Capacitor Android APIs; complete the protocol
+  key lifecycle and independently test it before enabling sensitive remote
+  content. The key-bearing invitation format has been removed.
 - Synchronize pair-specific prompt history and game state between devices.
 - Complete remote game-session synchronization, reconnection and retry
   handling; per-game mechanics listed above remain in progress.
 - Wire invitation, game, turn, trophy and presence events to push dispatch.
 - Add authenticated E2E device identity/key agreement and pair-scoped history;
   local content history is not synchronized to the room.
-- Obtain a successful Supabase CI run for the migration/pgTAP suite and add
-  hidden-answer tests as authoritative remote game-session APIs are developed.
+- Add hidden-answer tests as authoritative remote game-session APIs are developed.
 
 ## Owner-side activation and verification
 

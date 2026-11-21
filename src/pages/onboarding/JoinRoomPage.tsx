@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useAppStore } from '@/stores/app.store';
 import { decodeInvite, inviteStatus } from '@/services/pairing';
-import { importRoomKey } from '@/security/crypto';
 import { joinRemoteRoom } from '@/services/sync';
 import { registerStoredPushToken } from '@/services/notifications';
 
@@ -31,7 +30,7 @@ export const JoinRoomPage: React.FC = () => {
   }, [token]);
 
   const [nickname, setNickname] = useState('');
-  const [partnerNickname, setPartnerNickname] = useState(payload?.host || '');
+  const [partnerNickname, setPartnerNickname] = useState('');
   const [joining, setJoining] = useState(false);
 
   const join = async () => {
@@ -47,22 +46,24 @@ export const JoinRoomPage: React.FC = () => {
 
     setJoining(true);
     try {
-      await importRoomKey(payload.key);
       const remoteRoomId = await joinRemoteRoom(payload.code);
-      setRoomId(remoteRoomId ?? `room-${payload.code}`, payload.code);
+      if (!remoteRoomId) {
+        throw new Error('Remote pairing is not configured for this installation.');
+      }
+      setRoomId(remoteRoomId, payload.roomCode);
       void registerStoredPushToken().catch((error: unknown) => {
         console.error('Push token registration after room join failed', error);
       });
-      setInvite(payload.code, new Date(payload.exp).toISOString());
+      setInvite(payload.roomCode, new Date(payload.exp).toISOString());
       ensureDeviceId();
       setPlayerName(nickname.trim());
-      setPartnerName((partnerNickname.trim() || payload.host) + ' (Host)');
+      setPartnerName((partnerNickname.trim() || 'Partner') + ' (Host)');
       completeOnboarding();
       showToast('Private room joined', 'success');
       navigate('/home');
     } catch (error) {
       console.error('Invitation join failed', error);
-      showToast('This invitation could not be opened', 'error');
+      showToast(error instanceof Error ? error.message : 'This invitation could not be opened', 'error');
     } finally {
       setJoining(false);
     }
@@ -102,8 +103,8 @@ export const JoinRoomPage: React.FC = () => {
     >
       <div className="text-center space-y-2">
         <div className="text-4xl">🌹</div>
-        <h1 className="font-display text-2xl font-bold">Join {payload.host}'s Room</h1>
-        <p className="text-xs text-ad-text-secondary">The invitation is well-formed and unexpired. The server validates it when remote pairing is configured.</p>
+        <h1 className="font-display text-2xl font-bold">Join a private room</h1>
+        <p className="text-xs text-ad-text-secondary">The server checks invitation expiry and single-use status when you pair.</p>
       </div>
 
       <Card variant="glass" className="p-5 space-y-4">
@@ -119,7 +120,7 @@ export const JoinRoomPage: React.FC = () => {
           value={partnerNickname}
           onChange={(e) => setPartnerNickname(e.target.value)}
         />
-        <div className="text-[10px] text-ad-text-secondary font-mono">ROOM CODE · {payload.code}</div>
+        <div className="text-[10px] text-ad-text-secondary font-mono">ROOM CODE · {payload.roomCode}</div>
       </Card>
 
       <Button fullWidth size="lg" loading={joining} onClick={join}>
