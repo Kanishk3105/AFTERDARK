@@ -22,6 +22,8 @@
 - Room revocation archives the room, revokes active membership/invitations,
   increments the revocation version, expires chat rows, queues media for
   server cleanup and deletes registered push tokens.
+- Revocation is not yet a full remote-data purge: archived room, chat and game
+  metadata are not physically deleted by the current lifecycle.
 - Push messages contain generic text only; notification preferences and quiet
   hours are evaluated server-side. Individual token registration can be
   revoked; FCM `UNREGISTERED` responses also trigger stale-token cleanup.
