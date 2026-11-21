@@ -82,6 +82,97 @@ export function totalCatalogueSize(): number {
   return Object.values(RECIPES).reduce((sum, recipe) => sum + generatedCount(recipe), 0);
 }
 
+export interface CatalogueAudit {
+  generatedExperiences: number;
+  validUniqueExperiences: number;
+  duplicateIds: number;
+  semanticDuplicates: number;
+  games: Record<string, { generated: number; validUnique: number }>;
+}
+
+export function auditCatalogue(): CatalogueAudit {
+  const seenIds = new Set<string>();
+  const seenExact = new Set<string>();
+  const fingerprints: string[] = [];
+  const tokenIndex = new Map<string, number[]>();
+  const games: CatalogueAudit['games'] = {};
+  let generatedExperiences = 0;
+  let duplicateIds = 0;
+  let semanticDuplicates = 0;
+  let validUniqueExperiences = 0;
+
+  Object.values(RECIPES).forEach((recipe) => {
+    let gameValidUnique = 0;
+    const accept = (card: ContentCard) => {
+      generatedExperiences += 1;
+      if (seenIds.has(card.id)) {
+        duplicateIds += 1;
+        return;
+      }
+      seenIds.add(card.id);
+      if (!card.prompt.trim() || card.eligibility.privateBuild === false) return;
+
+      const exact = `${card.prompt.trim().toLowerCase()}|${(card.answerChoices ?? [])
+        .map((choice) => choice.trim().toLowerCase())
+        .join('|')}`;
+      if (seenExact.has(exact)) {
+        semanticDuplicates += 1;
+        return;
+      }
+      seenExact.add(exact);
+
+      const terms = card.similarityFingerprint.split(' ').filter(Boolean);
+      const postings = terms
+        .map((term) => tokenIndex.get(term))
+        .filter((entries): entries is number[] => entries !== undefined)
+        .sort((left, right) => left.length - right.length);
+      const candidates = postings[0] ?? [];
+      const currentTerms = new Set(terms);
+      const isSimilar = candidates.some((index) => {
+        const existing = new Set(fingerprints[index].split(' ').filter(Boolean));
+        const maximum = Math.max(existing.size, currentTerms.size);
+        const minimum = Math.min(existing.size, currentTerms.size);
+        if (maximum === 0 || minimum / maximum < 0.82) return false;
+        const intersection = Array.from(existing).filter((term) => currentTerms.has(term)).length;
+        return intersection / (existing.size + currentTerms.size - intersection) >= 0.82;
+      });
+      if (isSimilar) {
+        semanticDuplicates += 1;
+        return;
+      }
+
+      const index = fingerprints.length;
+      fingerprints.push(card.similarityFingerprint);
+      terms.forEach((term) => {
+        const entries = tokenIndex.get(term);
+        if (entries) entries.push(index);
+        else tokenIndex.set(term, [index]);
+      });
+      validUniqueExperiences += 1;
+      gameValidUnique += 1;
+    };
+
+    recipe.authored.forEach((authored) => accept(finalize(recipe, authored)));
+    const generatedCountWithoutAuthored = generatedCount(recipe) - recipe.authored.length;
+    for (let index = 0; index < generatedCountWithoutAuthored; index += 1) {
+      const card = cardFromIndex(recipe, index);
+      if (card) accept(card);
+    }
+    games[recipe.gameId] = {
+      generated: generatedCount(recipe),
+      validUnique: gameValidUnique,
+    };
+  });
+
+  return {
+    generatedExperiences,
+    validUniqueExperiences,
+    duplicateIds,
+    semanticDuplicates,
+    games,
+  };
+}
+
 function eligibleIntensity(cardLevel: IntensityLevel, selected: IntensityLevel): boolean {
   return INTENSITY_RANK[cardLevel] <= INTENSITY_RANK[selected];
 }
@@ -222,20 +313,57 @@ function allowed(card: ContentCard, request: SelectRequest): boolean {
   return true;
 }
 
-function tooSimilar(card: ContentCard, fingerprints: string[]): boolean {
-  if (fingerprints.includes(card.similarityFingerprint)) return true;
-  const recent = fingerprints.slice(-25);
-  return recent.some((existing) => jaccard(existing, card.similarityFingerprint) >= 0.82);
+function createSimilarityMatcher(fingerprints: string[]): (candidate: string) => boolean {
+  const exact = new Set(fingerprints);
+  const tokenIndex = new Map<string, number[]>();
+  const tokenSets = fingerprints.map((fingerprint, index) => {
+    const terms = new Set(fingerprint.split(' ').filter(Boolean));
+    terms.forEach((term) => {
+      const entries = tokenIndex.get(term);
+      if (entries) entries.push(index);
+      else tokenIndex.set(term, [index]);
+    });
+    return terms;
+  });
+
+  return (candidate) => {
+    if (exact.has(candidate)) return true;
+    const candidateTerms = new Set(candidate.split(' ').filter(Boolean));
+    const candidateLists = Array.from(candidateTerms)
+      .map((term) => tokenIndex.get(term))
+      .filter((entries): entries is number[] => entries !== undefined)
+      .sort((left, right) => left.length - right.length);
+    const possibleMatches = candidateLists[0] ?? [];
+    return possibleMatches.some((index) => {
+      const existing = tokenSets[index];
+      const maximum = Math.max(existing.size, candidateTerms.size);
+      const minimum = Math.min(existing.size, candidateTerms.size);
+      if (maximum === 0 || minimum / maximum < 0.82) return false;
+      const [smaller, larger] = existing.size <= candidateTerms.size
+        ? [existing, candidateTerms]
+        : [candidateTerms, existing];
+      let intersection = 0;
+      smaller.forEach((term) => {
+        if (larger.has(term)) intersection += 1;
+      });
+      return intersection / (existing.size + candidateTerms.size - intersection) >= 0.82;
+    });
+  };
+}
+
+export function isTooSimilar(card: ContentCard, fingerprints: string[]): boolean {
+  return createSimilarityMatcher(fingerprints)(card.similarityFingerprint);
 }
 
 export function selectNext(request: SelectRequest): SelectResult {
   const recipe = RECIPES[request.gameId];
   if (!recipe) return { ok: false, reason: 'This game has no content pack yet.' };
   const seen = new Set(request.history);
+  const hasSimilarHistory = createSimilarityMatcher(request.fingerprints);
   const pool: ContentCard[] = [];
 
   const consider = (card: ContentCard | null) => {
-    if (!card || seen.has(card.id) || !allowed(card, request) || tooSimilar(card, request.fingerprints)) return;
+    if (!card || seen.has(card.id) || !allowed(card, request) || hasSimilarHistory(card.similarityFingerprint)) return;
     pool.push(card);
   };
 

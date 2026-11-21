@@ -528,7 +528,7 @@ export const ChatPage: React.FC = () => {
               <span className="text-[10px] text-ad-gold">🔒</span>
             </div>
             <div className="text-[10px] text-ad-text-secondary/70">
-              End-to-End Encrypted Room
+              Private Room
             </div>
           </div>
         </div>

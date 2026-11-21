@@ -109,6 +109,7 @@ export const useAppStore = create<AppState>()(
           playerName: '',
           partnerName: '',
           pronouns: '',
+          deviceId: '',
           roomId: '',
           roomCode: '',
           inviteExpiresAt: null,

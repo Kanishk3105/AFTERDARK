@@ -17,7 +17,8 @@ export function expiryMilliseconds(expiry: MediaExpiry): number | null {
 
 export function expiresAt(expiry: MediaExpiry, now = Date.now(), viewed = false): string | undefined {
   if (expiry === 'keep') return undefined;
-  if (expiry === 'view-once') return viewed ? new Date(now).toISOString() : undefined;
+  if (!viewed) return undefined;
+  if (expiry === 'view-once') return new Date(now).toISOString();
   const milliseconds = expiryMilliseconds(expiry);
   return milliseconds === null ? undefined : new Date(now + milliseconds).toISOString();
 }

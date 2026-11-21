@@ -24,13 +24,14 @@ service-role key to `VITE_*` variables or frontend source.
 ## Supabase setup
 
 1. Create a Supabase project.
-2. Apply `supabase/schema.sql`.
-3. Configure anonymous or device-bound authentication.
-4. Enable Realtime for authorized tables.
-5. Configure private storage buckets and RLS.
-6. Test with two physical devices.
+2. Enable anonymous sign-in in Supabase Auth.
+3. Apply the versioned migrations with `supabase db push`; do not use the legacy `supabase/schema.sql` snapshot as a deployment migration.
+4. Enable Realtime for `chat_messages`.
+5. Add the public project URL and anon key to the app's local `.env` file.
+6. Run `.\scripts\verify-supabase.ps1` against local Supabase before deployment.
+7. Configure private storage policies before enabling remote media; remote media upload and retrieval are not implemented yet.
 
-No credentials or live backend connection are currently available in this repository.
+Anonymous Supabase auth provides the server identity used by the room membership RPCs. The local app's generated device ID is not an authorization credential. Credentials for a production project are intentionally not included.
 
 ## Android debug build
 
@@ -45,3 +46,7 @@ cd android
 ```
 
 The generated APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+## Release signing
+
+No signing key is stored in this repository. Before a release build, the owner must create and back up a long-lived Android upload/signing key, then configure it through local Gradle properties or a CI secret store. Do not generate a temporary key for production releases.

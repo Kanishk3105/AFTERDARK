@@ -9,13 +9,15 @@ describe('Media expiry', () => {
     expect(expiryMilliseconds('keep')).toBeNull();
   });
 
-  it('creates a future expiry for timed media', () => {
-    expect(expiresAt('5s', 1_000)).toBe(new Date(6_000).toISOString());
+  it('starts timed expiry only when media is viewed', () => {
+    expect(expiresAt('5s', 1_000)).toBeUndefined();
+    expect(expiresAt('5s', 1_000, true)).toBe(new Date(6_000).toISOString());
   });
 
   it('does not expire keep or unopened view-once records', () => {
     expect(expiresAt('keep', 1_000)).toBeUndefined();
     expect(expiresAt('view-once', 1_000)).toBeUndefined();
+    expect(expiresAt('view-once', 1_000, true)).toBe(new Date(1_000).toISOString());
   });
 
   it('marks elapsed media expired', () => {

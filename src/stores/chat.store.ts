@@ -4,6 +4,8 @@ import { seal } from '@/security/crypto';
 import { publish } from '@/services/channel';
 import { expiresAt as mediaExpiresAt } from '@/services/mediaExpiry';
 import { getRemoteClient } from '@/services/sync';
+import { ensureRemoteIdentity } from '@/services/sync';
+import { useAppStore } from '@/stores/app.store';
 import { ChatMessage, MediaExpiry, MessageType } from '@/types';
 
 interface SendParams {
@@ -41,7 +43,7 @@ const welcome = (): ChatMessage => ({
   senderId: 'system',
   senderName: 'AFTERDARK',
   type: 'system',
-  content: 'Welcome to your private room. Messages sealed on this device stay between the two of you. Screenshot protection cannot be guaranteed.',
+  content: 'Welcome to your private room. Text is sealed on this device before local storage. Screenshot protection cannot be guaranteed.',
   encryption: 'plaintext',
   reactions: {},
   status: 'read',
@@ -110,7 +112,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       mediaExpiry,
       previewLabel,
       replyToId,
-      expiresAt: mediaExpiry ? mediaExpiresAt(mediaExpiry) : undefined,
+      expiresAt: undefined,
       reactions: {},
       status: 'sent',
       createdAt: new Date().toISOString(),
@@ -123,16 +125,26 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       publish({ roomCode, senderId, type: 'chat', payload: message });
       const client = getRemoteClient();
       if (client) {
-        const { error } = await client.from('chat_messages').insert({
-          id: message.id,
-          room_code: roomCode,
-          sender_device_id: senderId,
-          sealed_content: sealedContent,
-          media_id: mediaId,
-          media_expiry: mediaExpiry,
-          expires_at: message.expiresAt,
-        });
-        if (error) console.error('Remote chat insert failed', error);
+        try {
+          const remoteSenderId = await ensureRemoteIdentity();
+          const remoteRoomId = useAppStore.getState().roomId;
+          if (!remoteSenderId || !remoteRoomId || remoteRoomId.startsWith('room-')) {
+            throw new Error('This room has not been created on the configured Supabase project.');
+          }
+          const { error } = await client.from('chat_messages').insert({
+            id: message.id,
+            room_id: remoteRoomId,
+            room_code: roomCode,
+            sender_device_id: remoteSenderId,
+            sealed_content: sealedContent,
+            media_id: mediaId,
+            media_expiry: mediaExpiry,
+            expires_at: null,
+          });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Remote chat insert failed', error);
+        }
       }
     }
     window.setTimeout(() => {
@@ -192,13 +204,17 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   markViewed: async (messageId) => {
     const current = get().messages.find((msg) => msg.id === messageId);
-    if (!current) return;
+    if (!current || current.viewed) return;
     const isViewOnce = current.mediaExpiry === 'view-once';
     if (isViewOnce) {
       await get().deleteMessage(messageId);
       return;
     }
-    const updated = { ...current, viewed: true };
+    const updated = {
+      ...current,
+      viewed: true,
+      expiresAt: current.mediaExpiry ? mediaExpiresAt(current.mediaExpiry, Date.now(), true) : undefined,
+    };
     set((state) => ({
       messages: state.messages.map((msg) => (msg.id === messageId ? updated : msg)),
     }));

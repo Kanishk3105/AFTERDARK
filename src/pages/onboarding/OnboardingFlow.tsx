@@ -12,6 +12,7 @@ import { createRoomCode, createRoomId, inviteLink, encodeInvite } from '@/servic
 import { exportRoomKey } from '@/security/crypto';
 import { noteRoomCreated } from '@/games/awards';
 import { CoupleConfig, IntensityLevel } from '@/types';
+import { createRemoteRoom } from '@/services/sync';
 
 export const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
@@ -85,9 +86,9 @@ export const OnboardingFlow: React.FC = () => {
 
     try {
       ensureDeviceId();
-      const newRoomId = createRoomId();
       const code = createRoomCode(6);
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
+      const newRoomId = await createRemoteRoom(code, code, expiresAt) ?? createRoomId();
 
       setRoomId(newRoomId, code);
       setInvite(code, expiresAt);
@@ -344,7 +345,7 @@ export const OnboardingFlow: React.FC = () => {
                   Your Room is Ready
                 </h2>
                 <p className="text-xs text-ad-text-secondary max-w-xs mx-auto">
-                  A private, cryptographically isolated room generated exclusively for {nick} & {partnerNick}.
+                  A private room configured for {nick} & {partnerNick}. Online pairing requires the configured Supabase service.
                 </p>
               </div>
 

@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useAppStore } from '@/stores/app.store';
 import { decodeInvite, inviteStatus } from '@/services/pairing';
 import { importRoomKey } from '@/security/crypto';
+import { joinRemoteRoom } from '@/services/sync';
 
 export const JoinRoomPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,8 @@ export const JoinRoomPage: React.FC = () => {
     setJoining(true);
     try {
       await importRoomKey(payload.key);
-      setRoomId(`room-${payload.code}`, payload.code);
+      const remoteRoomId = await joinRemoteRoom(payload.code);
+      setRoomId(remoteRoomId ?? `room-${payload.code}`, payload.code);
       setInvite(payload.code, new Date(payload.exp).toISOString());
       ensureDeviceId();
       setPlayerName(nickname.trim());
@@ -97,7 +99,7 @@ export const JoinRoomPage: React.FC = () => {
       <div className="text-center space-y-2">
         <div className="text-4xl">🌹</div>
         <h1 className="font-display text-2xl font-bold">Join {payload.host}'s Room</h1>
-        <p className="text-xs text-ad-text-secondary">This link has been cryptographically checked and has not expired.</p>
+        <p className="text-xs text-ad-text-secondary">The invitation is well-formed and unexpired. The server validates it when remote pairing is configured.</p>
       </div>
 
       <Card variant="glass" className="p-5 space-y-4">

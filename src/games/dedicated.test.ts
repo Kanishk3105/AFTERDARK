@@ -6,6 +6,7 @@ import {
   createPreferenceModel,
   nextPreferenceRound,
   preferenceMatches,
+  revealAndAdvancePreferenceRound,
   revealChallenge,
   revealPreferenceRound,
   submitChallenge,
@@ -30,6 +31,16 @@ describe('Dedicated couple game engines', () => {
     model = revealPreferenceRound(model);
     model = nextPreferenceRound(model);
     expect(model.completed).toBe(true);
+  });
+
+  it('reveals submitted choices before advancing the round', () => {
+    let model = createPreferenceModel('love-quiz', ['One', 'Two']);
+    model = submitPrivateChoice(model, 'a', 'yes');
+    model = submitPrivateChoice(model, 'b', 'no');
+    model = revealAndAdvancePreferenceRound(model);
+    expect(model.roundIndex).toBe(1);
+    expect(model.rounds[0]).toMatchObject({ a: 'yes', b: 'no', revealed: true });
+    expect(preferenceMatches(model)).toBe(0);
   });
 
   it('requires both challenge submissions before completion', () => {

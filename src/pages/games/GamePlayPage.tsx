@@ -164,7 +164,10 @@ export const GamePlayPage: React.FC = () => {
   };
 
   const finishGame = () => {
-    const perfectSix = gameId === 'six-questions' && (scores[0] === 6 || scores[1] === 6);
+    const perfectSix =
+      gameId === 'six-questions' &&
+      roundHistory.length === 6 &&
+      roundHistory.every((round) => round.matched);
     awardCompletion({
       gameId,
       moodId: moodId as MoodId,
@@ -868,71 +871,101 @@ export const GamePlayPage: React.FC = () => {
               {currentCard?.prompt || 'Make your choice:'}
             </h3>
 
-            {phase !== 'reveal' ? (
+            {phase === 'handoff1' && (
+              <Card variant="glass" className="p-5 space-y-3">
+                <p className="text-xs text-ad-text-secondary">Pass the phone to {p1Label}. Their choice stays private.</p>
+                <Button fullWidth onClick={() => setPhase('answer1')}>Start private choice</Button>
+              </Card>
+            )}
+            {phase === 'answer1' && (
               <div className="space-y-3">
-                {(currentCard?.answerChoices || (gameId === 'whos-more-likely' ? [playerName, partnerName] : ['Option A', 'Option B'])).map((choice, i) => (
-                  <Button
-                    key={i}
-                    variant={i === 0 ? 'secondary' : 'primary'}
-                    fullWidth
-                    size="lg"
-                    onClick={() => {
-                      setAnsPlayer1(choice);
-                      // In pass and play, reveal right away or simulate partner
-                      setAnsPlayer2(i === 0 ? choice : (currentCard?.answerChoices?.[0] || 'Alternative'));
-                      setPhase('reveal');
-                    }}
-                  >
-                    {choice}
-                  </Button>
-                ))}
-
-                {/* Optional Custom 3rd Option */}
+                <p className="text-sm font-bold">{p1Label}, choose privately</p>
+                {(currentCard?.answerChoices || (gameId === 'whos-more-likely' ? [playerName, partnerName] : ['Option A', 'Option B']))
+                  .map((choice, index) => (
+                    <Button
+                      key={index}
+                      variant={index === 0 ? 'secondary' : 'primary'}
+                      fullWidth
+                      onClick={() => handleP1AnswerSubmit(
+                        gameId === 'whos-more-likely'
+                          ? choice.replace('Player 1', playerName).replace('Player 2', partnerName)
+                          : choice,
+                      )}
+                    >
+                      {gameId === 'whos-more-likely'
+                        ? choice.replace('Player 1', playerName).replace('Player 2', partnerName)
+                        : choice}
+                    </Button>
+                  ))}
                 {gameId === 'would-you-rather' && (
-                  <div className="flex gap-2 pt-2">
+                  <div className="space-y-2">
                     <input
                       type="text"
-                      placeholder="Write custom 3rd answer..."
+                      placeholder="Write a custom third choice"
                       value={customInput}
-                      onChange={(e) => setCustomInput(e.target.value)}
-                      className="flex-1 bg-ad-bg-secondary/70 border border-ad-burgundy/40 rounded-xl px-3 py-2 text-xs text-ad-text"
+                      onChange={(event) => setCustomInput(event.target.value)}
+                      className="w-full bg-ad-bg-secondary/70 border border-ad-burgundy/40 rounded-xl px-3 py-2 text-xs text-ad-text"
                     />
                     <Button
+                      fullWidth
                       variant="ghost"
-                      size="sm"
                       disabled={!customInput.trim()}
-                      onClick={() => {
-                        setAnsPlayer1(customInput);
-                        setAnsPlayer2(customInput);
-                        setPhase('reveal');
-                      }}
+                      onClick={() => handleP1AnswerSubmit(customInput.trim())}
                     >
-                      Submit
+                      Choose custom option
                     </Button>
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+            {phase === 'handoff2' && (
+              <Card variant="glass" className="p-5 space-y-3">
+                <p className="text-xs text-ad-text-secondary">Pass to {p2Label}. Do not reveal the first choice.</p>
+                <Button fullWidth onClick={() => setPhase('guess2')}>Make private choice</Button>
+              </Card>
+            )}
+            {phase === 'guess2' && (
+              <div className="space-y-3">
+                <p className="text-sm font-bold">{p2Label}, choose privately</p>
+                {(currentCard?.answerChoices || (gameId === 'whos-more-likely' ? [playerName, partnerName] : ['Option A', 'Option B']))
+                  .map((choice, index) => {
+                    const displayedChoice = gameId === 'whos-more-likely'
+                      ? choice.replace('Player 1', playerName).replace('Player 2', partnerName)
+                      : choice;
+                    return (
+                      <Button
+                        key={index}
+                        variant={index === 0 ? 'secondary' : 'primary'}
+                        fullWidth
+                        onClick={() => handleP2GuessSubmit(displayedChoice)}
+                      >
+                        {displayedChoice}
+                      </Button>
+                    );
+                  })}
+                {gameId === 'would-you-rather' && customInput.trim() && (
+                  <Button fullWidth variant="ghost" onClick={() => handleP2GuessSubmit(customInput.trim())}>
+                    {customInput.trim()}
+                  </Button>
+                )}
+              </div>
+            )}
+            {phase === 'reveal' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="space-y-4"
               >
-                <div className="text-3xl">✨</div>
+                <div className="text-3xl">{ansPlayer1 === ansPlayer2 ? '🤝' : '✨'}</div>
                 <h4 className="font-display text-base font-bold text-ad-gold">
-                  Both Choices Revealed!
+                  {ansPlayer1 === ansPlayer2 ? 'You chose the same answer' : 'Choices revealed'}
                 </h4>
                 <div className="p-4 rounded-xl bg-ad-bg-secondary/60 border border-ad-burgundy/40 text-xs space-y-2 text-left">
-                  <div>
-                    <span className="text-ad-gold font-bold">{playerName}:</span> {ansPlayer1}
-                  </div>
-                  <div>
-                    <span className="text-ad-red font-bold">{partnerName}:</span> {ansPlayer2}
-                  </div>
+                  <div><span className="text-ad-gold font-bold">{p1Label}:</span> {ansPlayer1}</div>
+                  <div><span className="text-ad-red font-bold">{p2Label}:</span> {ansPlayer2}</div>
+                  <div>Score: {playerName} ({scores[0]}) · {partnerName} ({scores[1]})</div>
                 </div>
-                <Button variant="primary" fullWidth onClick={handleNextRound}>
-                  Next Card ➔
-                </Button>
+                <Button variant="primary" fullWidth onClick={handleNextRound}>Next Card ➔</Button>
               </motion.div>
             )}
           </div>

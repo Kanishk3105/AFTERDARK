@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   fingerprint,
+  isTooSimilar,
   jaccard,
   selectNext,
   selectMany,
+  auditCatalogue,
   totalCatalogueSize,
 } from './engine';
 
@@ -23,6 +25,15 @@ describe('No-Repetition Content Engine', () => {
 
     const simPartial = jaccard('kiss slow tender', 'kiss slow urgent');
     expect(simPartial).toBeGreaterThan(0.4);
+  });
+
+  it('excludes semantic repeats even when they are older than the recent window', () => {
+    const oldFingerprint = fingerprint('A sincere story about trust');
+    const unrelated = Array.from({ length: 30 }, (_, index) => `unrelated prompt ${index}`);
+    const card = {
+      similarityFingerprint: fingerprint('A sincere story about trust'),
+    } as Parameters<typeof isTooSimilar>[0];
+    expect(isTooSimilar(card, [...unrelated, oldFingerprint])).toBe(true);
   });
 
   it('selects valid content cards for games', () => {
@@ -89,4 +100,16 @@ describe('No-Repetition Content Engine', () => {
     const total = totalCatalogueSize();
     expect(total).toBeGreaterThanOrEqual(10_000);
   });
+
+  it('audits all generated prompts and reports only valid unique experiences', () => {
+    const report = auditCatalogue();
+    expect(report.generatedExperiences).toBe(totalCatalogueSize());
+    expect(report.duplicateIds).toBe(0);
+    expect(Object.keys(report.games)).toHaveLength(21);
+    expect(report.validUniqueExperiences).toBeGreaterThanOrEqual(10_000);
+    Object.values(report.games).forEach((game) => {
+      expect(game.generated).toBeGreaterThan(0);
+      expect(game.validUnique).toBeGreaterThan(0);
+    });
+  }, 60_000);
 });

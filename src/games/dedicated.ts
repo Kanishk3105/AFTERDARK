@@ -55,6 +55,10 @@ export function nextPreferenceRound(model: PreferenceModel): PreferenceModel {
   return { ...model, roundIndex: nextIndex };
 }
 
+export function revealAndAdvancePreferenceRound(model: PreferenceModel): PreferenceModel {
+  return nextPreferenceRound(revealPreferenceRound(model));
+}
+
 export interface ChallengeModel {
   gameId: string;
   prompt: string;

@@ -69,7 +69,9 @@ function App() {
           createdAt: new Date().toISOString(),
           deleted: false,
         });
-      }).then((cleanup) => { unsubscribeRemote = cleanup; });
+      })
+        .then((cleanup) => { unsubscribeRemote = cleanup; })
+        .catch((error: unknown) => console.error('Remote room subscription failed', error));
     }
     return () => {
       unsubscribe();

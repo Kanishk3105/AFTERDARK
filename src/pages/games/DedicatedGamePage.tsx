@@ -7,7 +7,12 @@ import { Badge } from '@/components/ui/Badge';
 import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
 import { awardCompletion } from '@/games/awards';
-import { createPreferenceModel, submitPrivateChoice, revealPreferenceRound, nextPreferenceRound } from '@/games/dedicated';
+import {
+  createPreferenceModel,
+  nextPreferenceRound,
+  revealAndAdvancePreferenceRound,
+  submitPrivateChoice,
+} from '@/games/dedicated';
 import { EMOJI_DECK } from '@/content/recipes';
 import type { PreferenceChoice } from '@/games/dedicated';
 
@@ -62,12 +67,8 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     setPhase('reveal');
   };
 
-  const reveal = () => {
-    setPreference((model) => revealPreferenceRound(model));
-  };
-
   const finishPreferenceRound = () => {
-    const next = nextPreferenceRound(preference);
+    const next = revealAndAdvancePreferenceRound(preference);
     setPreference(next);
     setAnswerA(undefined);
     setAnswerB(undefined);
@@ -154,7 +155,7 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
                 <div className="rounded-xl border border-ad-burgundy/40 p-3">{playerName}<div className="text-ad-gold text-sm mt-1">{answerA}</div></div>
                 <div className="rounded-xl border border-ad-burgundy/40 p-3">{partnerName}<div className="text-ad-gold text-sm mt-1">{answerB}</div></div>
               </div>
-              <Button fullWidth onClick={() => { reveal(); finishPreferenceRound(); }}>
+              <Button fullWidth onClick={finishPreferenceRound}>
                 {preference.roundIndex + 1 >= preference.rounds.length ? 'Finish Results' : 'Next Round'}
               </Button>
             </Card>

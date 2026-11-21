@@ -464,6 +464,10 @@ export const FANTASY_SETTINGS = [
   'a yacht with the lights off',
   'an old theatre',
   'a desert camp',
+  'an art-deco penthouse',
+  'a secluded garden',
+  'a lakeside observatory',
+  'a hidden jazz club',
 ];
 
 export const FANTASY_ATMOSPHERES = [
@@ -477,6 +481,9 @@ export const FANTASY_ATMOSPHERES = [
   'bold and laughing',
   'ceremonial',
   'almost silent',
+  'curious and unhurried',
+  'lighthearted with clear boundaries',
+  'charged with anticipation',
 ];
 
 export const FANTASY_THEMES = [

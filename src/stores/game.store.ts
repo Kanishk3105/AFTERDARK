@@ -44,7 +44,7 @@ interface GameState {
   endSession: () => void;
   recordCardEncountered: (cardId: string, fingerprint?: string, gameId?: string) => void;
   isCardEncountered: (cardId: string) => boolean;
-  clearHistory: () => void;
+  clearHistory: () => Promise<void>;
   patchSession: (partial: Partial<GameSession>) => void;
   setEngine: (engine: unknown) => void;
   saveMemory: (prompt: string, note: string) => void;
@@ -275,7 +275,7 @@ export const useGameStore = create<GameState>()(
         if (!current.includes(cardId)) {
           set({
             cardHistory: [...current, cardId],
-            fingerprints: fingerprint ? [...prints, fingerprint].slice(-400) : prints,
+            fingerprints: fingerprint ? [...prints, fingerprint] : prints,
           });
           void db.history.put({
             id: cardId,
@@ -290,7 +290,10 @@ export const useGameStore = create<GameState>()(
         return get().cardHistory.includes(cardId);
       },
 
-      clearHistory: () => set({ cardHistory: [] }),
+      clearHistory: async () => {
+        set({ cardHistory: [], fingerprints: [] });
+        await db.history.clear();
+      },
     }),
     {
       name: 'afterdark-game-store',

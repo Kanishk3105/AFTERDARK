@@ -5,7 +5,7 @@ import { useGameStore } from '@/stores/game.store';
 import { useChatStore } from '@/stores/chat.store';
 import { useTrophyStore } from '@/stores/trophy.store';
 import { APP_CONFIG } from '@/config/app.config';
-import { getSyncStatus } from '@/services/sync';
+import { getSyncStatus, revokeRemoteRoom } from '@/services/sync';
 import { totalCatalogueSize } from '@/content/engine';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -21,6 +21,7 @@ export const SettingsPage: React.FC = () => {
   const playerName = useAppStore((s) => s.playerName);
   const partnerName = useAppStore((s) => s.partnerName);
   const roomCode = useAppStore((s) => s.roomCode);
+  const roomId = useAppStore((s) => s.roomId);
   const deviceId = useAppStore((s) => s.deviceId);
   const preferences = useAppStore((s) => s.preferences);
 
@@ -67,18 +68,32 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleConfirmClearData = async () => {
-    await clearAllMessages();
-    clearHistory();
-    resetTrophies();
-    setShowClearDataModal(false);
-    showToast('Local messages and history cleared', 'success');
+    try {
+      await clearAllMessages();
+      await clearHistory();
+      resetTrophies();
+      setShowClearDataModal(false);
+      showToast('Local messages and history cleared', 'success');
+    } catch (error) {
+      console.error('Clearing local data failed', error);
+      showToast('Could not clear all local data', 'error');
+    }
   };
 
-  const handleConfirmUnpair = () => {
-    resetAll();
-    setShowUnpairModal(false);
-    showToast('Room deleted and unpaired', 'info');
-    navigate('/');
+  const handleConfirmUnpair = async () => {
+    try {
+      const remotelyRevoked = await revokeRemoteRoom(roomId);
+      resetAll();
+      setShowUnpairModal(false);
+      showToast(
+        remotelyRevoked ? 'Room access revoked and local pairing reset' : 'Local pairing reset',
+        'info',
+      );
+      navigate('/');
+    } catch (error) {
+      console.error('Room revocation failed', error);
+      showToast('Could not revoke the remote room. Local pairing was kept.', 'error');
+    }
   };
 
   return (
@@ -345,7 +360,7 @@ export const SettingsPage: React.FC = () => {
         </div>
         <div className="flex justify-between">
           <span>Content Catalogue:</span>
-          <span className="text-ad-gold font-bold">{catalogueSize.toLocaleString()} Prompts</span>
+          <span className="text-ad-gold font-bold">{catalogueSize.toLocaleString()} Generated</span>
         </div>
         <div className="flex justify-between">
           <span>Distribution Mode:</span>
@@ -356,7 +371,7 @@ export const SettingsPage: React.FC = () => {
           <span className="capitalize text-ad-text">{syncStatus.state}</span>
         </div>
         <div className="pt-2 text-[10px] text-ad-text-secondary/70 leading-relaxed font-sans">
-          Built exclusively for adults 18+. Private two-device cryptography. Screenshot and camera protection disclaimer applies.
+          Built exclusively for adults 18+. Text is sealed locally; complete end-to-end key protection is not yet available. Screenshots cannot be prevented.
         </div>
       </Card>
 
