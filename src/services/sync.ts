@@ -103,16 +103,44 @@ export async function uploadRemoteMedia(
   if (error) throw error;
 }
 
-export async function downloadRemoteMedia(mediaId: string): Promise<Blob> {
+export async function downloadRemoteMedia(mediaId: string, claimToken: string): Promise<Blob> {
   const client = getRemoteClient();
   if (!client) throw new Error('Remote media is not configured.');
   await ensureRemoteIdentity();
   const { data, error } = await client.functions.invoke('media-view', {
-    body: { mediaId },
+    body: { action: 'download', mediaId, claimToken },
   });
   if (error) throw error;
   if (!(data instanceof Blob)) throw new Error('Media service returned an invalid response.');
   return data;
+}
+
+export async function completeRemoteMediaView(mediaId: string, claimToken: string): Promise<void> {
+  await invokeRemoteMediaAction('complete', mediaId, claimToken);
+}
+
+export async function releaseRemoteMediaView(mediaId: string, claimToken: string): Promise<void> {
+  await invokeRemoteMediaAction('release', mediaId, claimToken);
+}
+
+async function invokeRemoteMediaAction(
+  action: 'complete' | 'release',
+  mediaId: string,
+  claimToken: string,
+): Promise<void> {
+  const client = getRemoteClient();
+  if (!client) throw new Error('Remote media is not configured.');
+  await ensureRemoteIdentity();
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { error } = await client.functions.invoke('media-view', {
+      body: { action, mediaId, claimToken },
+    });
+    if (!error) return;
+    lastError = error;
+    if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 250 * 2 ** attempt));
+  }
+  throw lastError ?? new Error(`Could not ${action} the media reservation.`);
 }
 
 export async function registerRemotePushToken(

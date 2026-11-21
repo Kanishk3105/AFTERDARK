@@ -21,7 +21,11 @@ Docker Desktop is required. From the repository root:
 npx supabase start
 npx supabase db reset --local
 npx supabase test db --local
-npx -y deno test --lock .\deno.lock .\supabase\functions\_shared\media-cleanup.test.ts
+npx -y deno test --frozen --lock .\deno.lock `
+  .\supabase\functions\_shared\media-cleanup.test.ts `
+  .\supabase\functions\_shared\push.test.ts
+npx -y deno check --frozen .\supabase\functions\media-view\index.ts `
+  .\supabase\functions\push-notification\index.ts
 Copy-Item .\supabase\functions\.env.example .\supabase\functions\.env.local
 # Fill local-only values in supabase/functions/.env.local.
 npx supabase functions serve --env-file .\supabase\functions\.env.local
@@ -37,10 +41,18 @@ MEDIA_CLEANUP_SECRET=<random local secret>
 FCM_SERVICE_ACCOUNT_JSON=<one-line Firebase service-account JSON; optional locally>
 ```
 
-The cleanup retry tests use a deterministic in-memory adapter and do not need
-FCM credentials. Docker-backed SQL/pgTAP, local Storage API and Edge Function
-integration still require Docker Desktop and were not validated in this
-development session.
+The cleanup and notification tests use deterministic adapters and do not need
+FCM credentials. Docker-backed SQL/pgTAP and local Storage API integration
+require Docker Desktop. The `.github/workflows/supabase-tests.yml` workflow runs
+migrations, pgTAP and the Deno adapter tests on GitHub Actions runners.
+
+Timed and view-once media uses a two-minute server reservation. The client
+reuses its claim token after a failed/interrupted attempt, completes the
+reservation only after download and decryption, and releases it after a failed
+download/decryption when online. Only one stream can hold a reservation at a
+time; if release cannot reach the server, the lease expires after two minutes.
+Completion is idempotent for the same token; view-once metadata and storage are
+removed by the scheduled cleanup job.
 
 ## Hosted Supabase activation
 

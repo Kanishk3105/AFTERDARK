@@ -1,6 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-type NotificationKind = 'invitation' | 'message' | 'game' | 'turn' | 'completion' | 'trophy' | 'presence';
+import {
+  buildFcmPayload,
+  isUnregisteredFcmResponse,
+  notificationTitles,
+  postFcmWithRetry,
+  shouldSendPush,
+  type NotificationKind,
+} from '../_shared/push.ts';
 
 function base64Url(bytes: Uint8Array): string {
   let binary = '';
@@ -56,16 +62,6 @@ async function fcmAccessToken(serviceAccount: {
   return token.access_token;
 }
 
-const notificationTitles: Record<NotificationKind, string> = {
-  invitation: 'AFTERDARK invitation',
-  message: 'A new private message',
-  game: 'A game invitation',
-  turn: 'It is your turn',
-  completion: 'Game completed',
-  trophy: 'A trophy was unlocked',
-  presence: 'Your partner entered the room',
-};
-
 const corsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, apikey, content-type',
@@ -95,7 +91,12 @@ Deno.serve(async (request) => {
   const { data: userData, error: authError } = await userClient.auth.getUser();
   if (authError || !userData.user) return textResponse('Unauthorized', 401);
 
-  const input = await request.json().catch(() => null);
+  let input: { roomId?: unknown; kind?: unknown };
+  try {
+    input = await request.json();
+  } catch {
+    return textResponse('Invalid notification request', 400);
+  }
   const roomId = input?.roomId;
   const kind = input?.kind as NotificationKind;
   if (typeof roomId !== 'string' || typeof kind !== 'string' || !Object.hasOwn(notificationTitles, kind)) {
@@ -120,50 +121,18 @@ Deno.serve(async (request) => {
 
   const recipientIds = (recipients ?? []).map((row) => row.device_id);
   if (!recipientIds.length) return jsonResponse({ sent: 0 });
-  const { data: settings } = await admin.from('notification_settings')
+  const { data: settings, error: settingsError } = await admin.from('notification_settings')
     .select('user_id, messages, game_invites, partner_activity, trophies, quiet_hours_start, quiet_hours_end, time_zone')
     .eq('room_id', roomId)
     .in('user_id', recipientIds);
-  const preferenceColumn = kind === 'message'
-    ? 'messages'
-    : kind === 'invitation' || kind === 'game' || kind === 'turn'
-      ? 'game_invites'
-      : kind === 'presence'
-        ? 'partner_activity'
-        : kind === 'trophy'
-          ? 'trophies'
-          : null;
+  if (settingsError) {
+    console.error('Notification preferences could not be loaded', settingsError.message);
+    return textResponse('Could not load notification preferences', 500);
+  }
   const settingByUser = new Map((settings ?? []).map((setting) => [setting.user_id, setting]));
-  const enabled = recipientIds.filter((userId) => {
-    const setting = settingByUser.get(userId);
-    if (!setting) return kind !== 'presence';
-    if (preferenceColumn !== null && !setting[preferenceColumn]) return false;
-    if (!setting.quiet_hours_start || !setting.quiet_hours_end) return true;
-    try {
-      const currentParts = new Intl.DateTimeFormat('en-GB', {
-        timeZone: setting.time_zone || 'UTC',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-      }).formatToParts(new Date());
-      const currentTime = Number(currentParts.find((part) => part.type === 'hour')?.value) * 60 +
-        Number(currentParts.find((part) => part.type === 'minute')?.value);
-      const parseTime = (value: string) => {
-        const [hours, minutes] = value.split(':').map(Number);
-        return hours * 60 + minutes;
-      };
-      const quietStart = parseTime(setting.quiet_hours_start);
-      const quietEnd = parseTime(setting.quiet_hours_end);
-      if (quietStart === quietEnd) return true;
-      const quiet = quietStart < quietEnd
-        ? currentTime >= quietStart && currentTime < quietEnd
-        : currentTime >= quietStart || currentTime < quietEnd;
-      return !quiet;
-    } catch (error) {
-      console.error('Invalid notification timezone; suppressing push', error);
-      return false;
-    }
-  });
+  const enabled = recipientIds.filter((userId) =>
+    shouldSendPush(kind, settingByUser.get(userId), new Date())
+  );
   const { data: devices, error: deviceError } = await admin.from('device_tokens')
     .select('token, user_id')
     .eq('room_id', roomId)
@@ -174,38 +143,35 @@ Deno.serve(async (request) => {
   const account = JSON.parse(accountJson);
   const accessToken = await fcmAccessToken(account);
   let sent = 0;
+  let failed = 0;
   for (const device of devices) {
-    const response = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`,
-      {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${accessToken}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: {
-            token: device.token,
-            notification: { title: notificationTitles[kind], body: 'Open AFTERDARK to view.' },
-            data: { kind, roomId },
-            android: { priority: 'high' },
+    let response: Response;
+    try {
+      const result = await postFcmWithRetry(() => fetch(
+        `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            'content-type': 'application/json',
           },
-        }),
-      },
-    );
-    if (response.ok) sent += 1;
-    else {
-      const body = await response.text();
-      let unregistered = false;
-      try {
-        const failure = JSON.parse(body);
-        unregistered = failure?.error?.details?.some(
-          (detail: { errorCode?: string }) => detail.errorCode === 'UNREGISTERED',
-        ) ?? false;
-      } catch {
-        unregistered = false;
-      }
-      if (unregistered) {
+          body: JSON.stringify(buildFcmPayload(device.token, kind, roomId)),
+        },
+      ));
+      response = result.response;
+      if (result.retries) console.warn('FCM delivery succeeded after retries', result.retries);
+    } catch (error) {
+      failed += 1;
+      console.error('FCM delivery exhausted network retries', error);
+      continue;
+    }
+
+    if (response.ok) {
+      sent += 1;
+    } else {
+      failed += 1;
+      const body = await response.clone().text();
+      if (await isUnregisteredFcmResponse(response)) {
         const { error } = await admin.from('device_tokens').delete()
           .eq('room_id', roomId)
           .eq('user_id', device.user_id)
@@ -216,5 +182,5 @@ Deno.serve(async (request) => {
     }
   }
 
-  return jsonResponse({ sent, attempted: devices.length });
+  return jsonResponse({ sent, failed, attempted: devices.length });
 });

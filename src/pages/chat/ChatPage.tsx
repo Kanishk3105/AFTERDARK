@@ -20,7 +20,11 @@ import {
 } from '@capacitor-community/video-recorder';
 import { VoiceRecorder } from '@independo/capacitor-voice-recorder';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
-import { downloadRemoteMedia } from '@/services/sync';
+import {
+  completeRemoteMediaView,
+  downloadRemoteMedia,
+  releaseRemoteMediaView,
+} from '@/services/sync';
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,6 +74,8 @@ export const ChatPage: React.FC = () => {
   // Media Viewer modal
   const [viewingMediaUrl, setViewingMediaUrl] = useState<string | null>(null);
   const [viewingMediaMime, setViewingMediaMime] = useState<string>('image/jpeg');
+  const mediaClaimTokensRef = useRef(new Map<string, string>());
+  const pendingMediaViewsRef = useRef(new Map<string, { blob: Blob; claimToken: string }>());
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -574,6 +580,21 @@ export const ChatPage: React.FC = () => {
                           showToast('This media has expired.', 'info');
                           return;
                         }
+                        const pending = pendingMediaViewsRef.current.get(msg.mediaId!);
+                        if (pending) {
+                          await completeRemoteMediaView(msg.mediaId!, pending.claimToken);
+                          pendingMediaViewsRef.current.delete(msg.mediaId!);
+                          mediaClaimTokensRef.current.delete(msg.mediaId!);
+                          setViewingMediaUrl(URL.createObjectURL(pending.blob));
+                          setViewingMediaMime(msg.mediaMime || pending.blob.type);
+                          try {
+                            await markViewed(msg.id);
+                          } catch (error) {
+                            console.error('Local media view state update failed', error);
+                          }
+                          return;
+                        }
+
                         const record = await db.media.get(msg.mediaId!);
                         let mediaBlob: Blob;
                         if (record?.blob) {
@@ -581,15 +602,48 @@ export const ChatPage: React.FC = () => {
                           const plain = record.encrypted ? await openSealBytes(bytes) : bytes;
                           mediaBlob = new Blob([plain], { type: record.mime });
                         } else {
-                          const encrypted = await downloadRemoteMedia(msg.mediaId!);
+                          let claimToken = mediaClaimTokensRef.current.get(msg.mediaId!);
+                          if (!claimToken) {
+                            claimToken = crypto.randomUUID();
+                            mediaClaimTokensRef.current.set(msg.mediaId!, claimToken);
+                          }
+                          const encrypted = await downloadRemoteMedia(msg.mediaId!, claimToken);
                           const plain = await openSealBytes(new Uint8Array(await encrypted.arrayBuffer()));
                           mediaBlob = new Blob([plain], { type: msg.mediaMime || msg.type });
+                          if (msg.mediaExpiry && msg.mediaExpiry !== 'keep') {
+                            try {
+                              await completeRemoteMediaView(msg.mediaId!, claimToken);
+                              mediaClaimTokensRef.current.delete(msg.mediaId!);
+                            } catch (error) {
+                              console.error('Media view completion will retry', error);
+                              pendingMediaViewsRef.current.set(msg.mediaId!, { blob: mediaBlob, claimToken });
+                              setViewingMediaUrl(URL.createObjectURL(mediaBlob));
+                              setViewingMediaMime(msg.mediaMime || mediaBlob.type);
+                              showToast('Media opened. Its view confirmation will retry when reopened.', 'info');
+                              return;
+                            }
+                          } else {
+                            mediaClaimTokensRef.current.delete(msg.mediaId!);
+                          }
                         }
-                        await markViewed(msg.id);
                         setViewingMediaUrl(URL.createObjectURL(mediaBlob));
                         setViewingMediaMime(msg.mediaMime || mediaBlob.type);
+                        try {
+                          await markViewed(msg.id);
+                        } catch (error) {
+                          console.error('Local media view state update failed', error);
+                        }
                       } catch (error) {
                         console.error('Media retrieval failed', error);
+                        const claimToken = mediaClaimTokensRef.current.get(msg.mediaId!);
+                        if (claimToken && !pendingMediaViewsRef.current.has(msg.mediaId!)) {
+                          try {
+                            await releaseRemoteMediaView(msg.mediaId!, claimToken);
+                            mediaClaimTokensRef.current.delete(msg.mediaId!);
+                          } catch (releaseError) {
+                            console.error('Media view reservation release will retry', releaseError);
+                          }
+                        }
                         showToast('This media could not be opened or has expired.', 'error');
                       }
                     }}

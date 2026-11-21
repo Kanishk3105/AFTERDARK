@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(25);
 set local role authenticated;
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);
@@ -43,6 +43,18 @@ select is(
   1::bigint,
   'paired device can register a notification token'
 );
+select public.register_device_token(
+  current_setting('afterdark.test.room_a')::uuid,
+  'test-token-with-more-than-twenty-v2',
+  'android'
+);
+select is(
+  (select token from public.device_tokens
+   where room_id = current_setting('afterdark.test.room_a')::uuid
+     and user_id = auth.uid()),
+  'test-token-with-more-than-twenty-v2',
+  'token refresh replaces the previous registration'
+);
 select public.unregister_device_token(current_setting('afterdark.test.room_a')::uuid);
 select is(
   (select count(*) from public.device_tokens
@@ -77,16 +89,43 @@ select is(
   'view-once',
   'paired recipient atomically claims view-once media'
 );
-select lives_ok(
+select throws_ok(
+  $$select * from public.claim_media_view(
+    '20000000-0000-4000-8000-000000000001',
+    null
+  )$$,
+  'P0001',
+  'invalid_claim_token',
+  'server rejects reservations without an idempotency token'
+);
+select throws_ok(
   $$select * from public.claim_media_view(
     '20000000-0000-4000-8000-000000000001',
     '30000000-0000-4000-8000-000000000001'
   )$$,
-  'same recipient can retry an in-flight view-once retrieval idempotently'
+  'P0001',
+  'media_claimed',
+  'a duplicate request cannot open a concurrent stream for the active reservation'
+);
+select throws_ok(
+  $$select * from public.claim_media_view(
+    '20000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000099'
+  )$$,
+  'P0001',
+  'media_claimed',
+  'a competing view attempt cannot steal an active reservation'
 );
 select public.complete_media_view(
   '20000000-0000-4000-8000-000000000001',
   '30000000-0000-4000-8000-000000000001'
+);
+select lives_ok(
+  $$select public.complete_media_view(
+    '20000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000001'
+  )$$,
+  'completion retries with the same claim token are idempotent'
 );
 select throws_ok(
   $$select * from public.claim_media_view('20000000-0000-4000-8000-000000000001')$$,
@@ -124,6 +163,30 @@ select throws_ok(
   'media_expired_or_consumed',
   'server denies media after the authoritative expiry time'
 );
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);
+select public.create_media_record(
+  '20000000-0000-4000-8000-000000000004',
+  current_setting('afterdark.test.room_a')::uuid,
+  'view-once',
+  'image/jpeg'
+);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+select * from public.claim_media_view(
+  '20000000-0000-4000-8000-000000000004',
+  '30000000-0000-4000-8000-000000000004'
+);
+select public.release_media_view(
+  '20000000-0000-4000-8000-000000000004',
+  '30000000-0000-4000-8000-000000000004'
+);
+select is(
+  (select authorized_claim_token from public.claim_media_view(
+    '20000000-0000-4000-8000-000000000004',
+    '30000000-0000-4000-8000-000000000004'
+  )),
+  '30000000-0000-4000-8000-000000000004'::uuid,
+  'a released failed-download reservation can be retried with its stable token'
+);
 select public.create_invitation(
   current_setting('afterdark.test.room_a')::uuid,
   'INVITE03',
@@ -156,6 +219,11 @@ select public.create_media_record(
   'keep',
   'audio/ogg'
 );
+select public.register_device_token(
+  current_setting('afterdark.test.room_a')::uuid,
+  'test-token-with-more-than-twenty-v3',
+  'android'
+);
 select lives_ok(
   format('select public.revoke_room(%L::uuid)', current_setting('afterdark.test.room_a')::uuid),
   'room member can revoke the room'
@@ -171,6 +239,12 @@ select ok(
    from public.media_records
    where id = '20000000-0000-4000-8000-000000000003'),
   'room revocation queues retained media for storage cleanup'
+);
+select is(
+  (select count(*) from public.device_tokens
+   where room_id = current_setting('afterdark.test.room_a')::uuid),
+  0::bigint,
+  'room revocation deletes registered push tokens'
 );
 
 select * from finish();

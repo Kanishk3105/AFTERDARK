@@ -29,6 +29,7 @@ export function submitPrivateChoice(
   player: 'a' | 'b',
   choice: PreferenceChoice,
 ): PreferenceModel {
+  if (model.completed || model.rounds[model.roundIndex]?.revealed) return model;
   const rounds = model.rounds.map((round, index) =>
     index === model.roundIndex ? { ...round, [player]: choice } : round,
   );
@@ -50,6 +51,7 @@ export function preferenceMatches(model: PreferenceModel): number {
 }
 
 export function nextPreferenceRound(model: PreferenceModel): PreferenceModel {
+  if (model.completed || !model.rounds[model.roundIndex]?.revealed) return model;
   const nextIndex = model.roundIndex + 1;
   if (nextIndex >= model.rounds.length) return { ...model, completed: true };
   return { ...model, roundIndex: nextIndex };
@@ -72,17 +74,21 @@ export function createChallenge(gameId: string, prompt: string): ChallengeModel 
 }
 
 export function acceptChallenge(model: ChallengeModel): ChallengeModel {
+  if (model.status !== 'pending') return model;
   return { ...model, status: 'accepted' };
 }
 
 export function submitChallenge(model: ChallengeModel, player: 0 | 1, submission: string): ChallengeModel {
+  if (model.status !== 'accepted' || !submission.trim()) return model;
   const submissions: [string?, string?] = [...model.submissions];
   submissions[player] = submission;
   return { ...model, submissions };
 }
 
 export function revealChallenge(model: ChallengeModel): ChallengeModel {
-  if (!model.submissions[0] || !model.submissions[1]) return model;
+  if (model.status !== 'accepted' || !model.submissions[0]?.trim() || !model.submissions[1]?.trim()) {
+    return model;
+  }
   const scores: [number, number] = [...model.scores];
   scores[0] += 1;
   scores[1] += 1;
@@ -96,22 +102,47 @@ export interface RankedItem {
 }
 
 export interface MenuModel {
-  items: RankedItem[];
+  items: [RankedItem[], RankedItem[]];
   submitted: [boolean, boolean];
   revealed: boolean;
+  matchingRanks: number;
 }
 
 export function createMenu(items: string[]): MenuModel {
   return {
-    items: items.map((label, index) => ({ id: `menu-${index}`, label, rank: index })),
+    items: [
+      items.map((label, index) => ({ id: `menu-${index}`, label, rank: index })),
+      items.map((label, index) => ({ id: `menu-${index}`, label, rank: index })),
+    ],
     submitted: [false, false],
     revealed: false,
+    matchingRanks: 0,
   };
 }
 
 export function setMenuRank(model: MenuModel, player: 0 | 1, itemId: string, rank: number): MenuModel {
-  const items = model.items.map((item) => (item.id === itemId ? { ...item, rank } : item));
+  if (model.revealed || model.submitted[player] || !Number.isInteger(rank)) return model;
+  const playerItems = model.items[player];
+  if (rank < 0 || rank >= playerItems.length || !playerItems.some((item) => item.id === itemId)) {
+    return model;
+  }
+  const items: [RankedItem[], RankedItem[]] = [...model.items];
+  items[player] = playerItems.map((item) => item.id === itemId ? { ...item, rank } : item);
+  return { ...model, items };
+}
+
+export function submitMenuRanking(model: MenuModel, player: 0 | 1): MenuModel {
+  if (model.revealed || model.submitted[player]) return model;
+  const ranks = model.items[player].map((item) => item.rank).sort((a, b) => a - b);
+  if (ranks.some((rank, index) => rank !== index)) return model;
   const submitted: [boolean, boolean] = [...model.submitted];
   submitted[player] = true;
-  return { ...model, items, submitted };
+  return { ...model, submitted };
+}
+
+export function revealMenu(model: MenuModel): MenuModel {
+  if (model.revealed || !model.submitted[0] || !model.submitted[1]) return model;
+  const partnerRanks = new Map(model.items[1].map((item) => [item.id, item.rank]));
+  const matchingRanks = model.items[0].filter((item) => partnerRanks.get(item.id) === item.rank).length;
+  return { ...model, revealed: true, matchingRanks };
 }

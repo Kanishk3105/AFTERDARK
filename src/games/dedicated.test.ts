@@ -7,9 +7,12 @@ import {
   nextPreferenceRound,
   preferenceMatches,
   revealAndAdvancePreferenceRound,
+  revealMenu,
   revealChallenge,
   revealPreferenceRound,
+  setMenuRank,
   submitChallenge,
+  submitMenuRanking,
   submitPrivateChoice,
 } from './dedicated';
 
@@ -26,6 +29,7 @@ describe('Dedicated couple game engines', () => {
 
   it('advances or completes preference rounds', () => {
     let model = createPreferenceModel('desire-match', ['One']);
+    expect(nextPreferenceRound(model)).toBe(model);
     model = submitPrivateChoice(model, 'a', 'yes');
     model = submitPrivateChoice(model, 'b', 'yes');
     model = revealPreferenceRound(model);
@@ -37,6 +41,8 @@ describe('Dedicated couple game engines', () => {
     let model = createPreferenceModel('love-quiz', ['One', 'Two']);
     model = submitPrivateChoice(model, 'a', 'yes');
     model = submitPrivateChoice(model, 'b', 'no');
+    const revealed = revealPreferenceRound(model);
+    expect(submitPrivateChoice(revealed, 'a', 'maybe')).toBe(revealed);
     model = revealAndAdvancePreferenceRound(model);
     expect(model.roundIndex).toBe(1);
     expect(model.rounds[0]).toMatchObject({ a: 'yes', b: 'no', revealed: true });
@@ -45,7 +51,9 @@ describe('Dedicated couple game engines', () => {
 
   it('requires both challenge submissions before completion', () => {
     let model = createChallenge('challenge-duel', 'Share a sincere compliment');
+    expect(submitChallenge(model, 0, 'too early')).toBe(model);
     model = acceptChallenge(model);
+    expect(submitChallenge(model, 0, '   ')).toBe(model);
     model = submitChallenge(model, 0, 'Player one response');
     expect(revealChallenge(model).status).toBe('accepted');
     model = submitChallenge(model, 1, 'Player two response');
@@ -56,7 +64,27 @@ describe('Dedicated couple game engines', () => {
 
   it('creates a private menu from ranked items', () => {
     const model = createMenu(['Slow evening', 'Adventure', 'Deep conversation']);
-    expect(model.items).toHaveLength(3);
+    expect(model.items[0]).toHaveLength(3);
+    expect(model.items[1]).toHaveLength(3);
     expect(model.submitted).toEqual([false, false]);
+  });
+
+  it('keeps menu rankings private and reveals only after both unique rankings are submitted', () => {
+    let model = createMenu(['Slow evening', 'Adventure', 'Deep conversation']);
+    model = setMenuRank(model, 0, 'menu-0', 1);
+    expect(submitMenuRanking(model, 0).submitted[0]).toBe(false);
+    model = setMenuRank(model, 0, 'menu-1', 0);
+    expect(model.items[1].map((item) => item.rank)).toEqual([0, 1, 2]);
+    expect(submitMenuRanking(model, 0).submitted[0]).toBe(true);
+
+    model = submitMenuRanking(model, 0);
+    expect(revealMenu(model).revealed).toBe(false);
+    model = setMenuRank(model, 1, 'menu-0', 2);
+    model = setMenuRank(model, 1, 'menu-1', 0);
+    model = setMenuRank(model, 1, 'menu-2', 1);
+    model = submitMenuRanking(model, 1);
+    model = revealMenu(model);
+    expect(model).toMatchObject({ revealed: true, matchingRanks: 1 });
+    expect(setMenuRank(model, 1, 'menu-0', 0)).toBe(model);
   });
 });

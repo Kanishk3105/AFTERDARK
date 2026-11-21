@@ -41,10 +41,12 @@ stdout. The audit measures generated/unique experiences, duplicate IDs,
 normalized prompts, near-duplicate examples, required metadata, game
 categorization and public/private eligibility. At this revision it reports
 19,074 generated combinations and 11,075 valid unique private-build
-experiences, with zero duplicate IDs and 7,999 exact/near-duplicate candidates
-excluded. Near-duplicate comparisons use normalized prompt/choice token sets
-and Jaccard similarity >= 0.82; this is a lexical heuristic, not a semantic
-language model. This total does not apply an individual couple’s
+experiences, with zero duplicate IDs, zero exact duplicate experiences, and
+7,999 lexical near-duplicate candidates excluded. It also reports 18,955
+unique normalized prompt strings (119 repeated prompt strings, including
+reusable stems). Near-duplicate comparisons use normalized prompt/choice token
+sets and Jaccard similarity >= 0.82; this is a lexical heuristic, not a
+semantic language model. This total does not apply an individual couple’s
 intensity or excluded-topic settings. Pair history remains local and is not
 synchronized between devices.
 
@@ -57,14 +59,14 @@ duplicates and the full catalogue threshold.
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Tested | `npm test`; latest run: 48 tests passed across 9 files. |
-| Supabase schema and local configuration | Implemented, not fully locally executed | Versioned migrations, RLS, Edge Functions, local `config.toml` and pgTAP media/room tests exist. In-memory cleanup retry/idempotency tests pass; SQL/pgTAP and Storage API integration could not run because Docker Desktop is unavailable. |
+| Unit tests | Tested | `npm test`; latest run: 49 tests passed across 9 files. |
+| Supabase schema and local configuration | Implemented, local database tests pending | Versioned migrations, RLS, Edge Functions, local `config.toml` and pgTAP media/room tests exist. A GitHub Actions workflow now starts local Supabase and runs the migrations, pgTAP and Deno adapter tests. Docker Desktop's Linux engine is unavailable in this workstation session, so no successful local database run is claimed. |
 | Supabase remote chat | Implemented but externally unverified | Authenticated room RPCs, message subscription and encrypted media upload/view endpoints are wired. Live two-phone relay and offline retry are unverified. Full game-state sync is not implemented; Anywhere mode remains disabled. |
 | Room deletion | Incomplete | Revocation blocks access and queues media for cleanup, but archived room/chat/game metadata is not physically purged. |
 | Photo/video/gallery/voice | Implemented but device-unverified | Native plugins compile; capture/gallery/voice now show preview before explicit send. Media bytes are sealed locally and for remote upload. No physical device or emulator is attached. |
-| Disappearing media | Server implementation added; partially tested | SQL enforces membership, first-view expiry and atomic view-once claim. Room revocation queues media for cleanup. Edge cleanup checks storage existence, is idempotent, logs failures and retries; in-memory retry tests pass. Docker-backed SQL/Storage integration remains unverified. Cleanup needs a scheduled invocation; interrupted view-once downloads can be consumed. |
-| FCM notifications | Partially implemented; externally unverified | Native registration/token refresh, token revocation, preference/quiet-hours checks and generic FCM HTTP v1 dispatch are wired. Only chat messages currently invoke server dispatch; game, invitation, turn, trophy and presence event producers are not wired. Local scheduling has an injectable test adapter; actual OS delivery remains device-unverified. Firebase project and service account are absent. |
-| End-to-end encryption | Incomplete; do not market as E2EE | Android local key storage and AES-GCM message/media encryption exist. The invite still transports a shared raw room key; authenticated protocol handshake, ratchet, replay protection, device revocation/key rotation and independent-device crypto tests remain missing. |
+| Disappearing media | Reservation/completion flow implemented; database tests pending | Expiring media uses a two-minute atomic reservation, stable-token download retries, idempotent completion, release on failed download/decryption, and server-started expiry. Consumed/expired metadata and objects are removed by scheduled cleanup. pgTAP now covers contention, completion replay and release/retry; database/Storage execution remains pending because Docker's Linux engine is unavailable locally. |
+| FCM notifications | Deterministic server adapter added; live dispatch incomplete | Native registration/token refresh/revocation, privacy-safe generic payloads, preference/quiet-hours filtering and bounded retries for transient FCM errors are wired. Shared adapter tests cover categories, quiet hours, privacy, retries and stale-token detection. Game, invitation, turn, trophy and presence event producers are not all wired; real delivery remains Firebase/device-unverified. |
+| End-to-end encryption | Incomplete; do not market as E2EE | The invite still transports a shared raw room key. A protocol/library assessment and threat model are documented in [the crypto assessment](./CRYPTO_PROTOCOL_ASSESSMENT.md); no reviewed library found in that assessment supports both required client platforms with an appropriate supported API. Authenticated pairing, independent sessions, forward secrecy, replay protection, revocation/key rotation and independent-device crypto tests remain missing. |
 | Android debug build | Tested | Fresh `npm run android:assemble` passed using JDK 21. APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Android custom-scheme invite handling is wired but not device-tested. |
 | Android release configuration | Tested without release credentials | Unsigned `bundleRelease` task passed. Signing is conditional on the four `AFTERDARK_RELEASE_*` environment variables; the bundle is not ready for distribution until signed and verified with the owner-controlled key. |
 | Physical two-phone use | Not tested | ADB found no connected emulator or phone. No live Supabase project credentials are configured. |
@@ -73,18 +75,25 @@ duplicates and the full catalogue threshold.
 Use [the Android manual checklist](./ANDROID_MANUAL_VERIFICATION.md) for device
 testing. It intentionally records physical-device checks as pending.
 
-## Production setup still required
+## Engineering work still incomplete (not owner-side setup)
 
-- Replace shared-room-key invitation transport with an established,
-  authenticated E2E protocol before sending sensitive content remotely.
+- Select and integrate a maintained, reviewed protocol library with supported
+  React/browser and Capacitor Android APIs; remove shared-key URL transport and
+  implement the complete protocol/key lifecycle before sending sensitive
+  content remotely.
 - Synchronize pair-specific prompt history and game state between devices.
 - Complete remote game-session synchronization, reconnection and retry
   handling; per-game mechanics listed above remain in progress.
 - Wire invitation, game, turn, trophy and presence events to push dispatch.
 - Add authenticated E2E device identity/key agreement and pair-scoped history;
   local content history is not synchronized to the room.
-- Run Supabase reset/pgTAP tests with Docker, deploy the migrations/functions,
-  configure Realtime and schedule cleanup.
+- Obtain a successful Supabase CI run for the migration/pgTAP suite and add
+  hidden-answer tests as authoritative remote game-session APIs are developed.
+
+## Owner-side activation and verification
+
+- Deploy the migrations/functions, configure Realtime and schedule cleanup in
+  the owner's Supabase project.
 - Configure Firebase project/package identity, add owner-provided
   `google-services.json`, deploy FCM secrets and verify real push delivery.
 - Execute the physical-device and two-phone checklist.
