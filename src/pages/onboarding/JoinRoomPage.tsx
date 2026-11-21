@@ -9,6 +9,7 @@ import { useAppStore } from '@/stores/app.store';
 import { decodeInvite, inviteStatus } from '@/services/pairing';
 import { importRoomKey } from '@/security/crypto';
 import { joinRemoteRoom } from '@/services/sync';
+import { registerStoredPushToken } from '@/services/notifications';
 
 export const JoinRoomPage: React.FC = () => {
   const navigate = useNavigate();
@@ -49,6 +50,9 @@ export const JoinRoomPage: React.FC = () => {
       await importRoomKey(payload.key);
       const remoteRoomId = await joinRemoteRoom(payload.code);
       setRoomId(remoteRoomId ?? `room-${payload.code}`, payload.code);
+      void registerStoredPushToken().catch((error: unknown) => {
+        console.error('Push token registration after room join failed', error);
+      });
       setInvite(payload.code, new Date(payload.exp).toISOString());
       ensureDeviceId();
       setPlayerName(nickname.trim());

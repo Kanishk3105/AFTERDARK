@@ -13,6 +13,7 @@
     "android:assemble": "npm run android:sync && cd android && .\\gradlew.bat assembleDebug"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@capacitor-community/video-recorder": "^7.5.0",
     "@capacitor/android": "^8.6.2",
     "@capacitor/camera": "^8.2.6",

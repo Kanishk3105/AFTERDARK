@@ -13,6 +13,7 @@ import { exportRoomKey } from '@/security/crypto';
 import { noteRoomCreated } from '@/games/awards';
 import { CoupleConfig, IntensityLevel } from '@/types';
 import { createRemoteRoom } from '@/services/sync';
+import { registerStoredPushToken } from '@/services/notifications';
 
 export const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
@@ -91,6 +92,9 @@ export const OnboardingFlow: React.FC = () => {
       const newRoomId = await createRemoteRoom(code, code, expiresAt) ?? createRoomId();
 
       setRoomId(newRoomId, code);
+      void registerStoredPushToken().catch((error: unknown) => {
+        console.error('Push token registration after room creation failed', error);
+      });
       setInvite(code, expiresAt);
       noteRoomCreated();
 

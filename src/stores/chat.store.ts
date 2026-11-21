@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { db } from '@/data/db';
-import { seal } from '@/security/crypto';
+import { seal, sealBytes } from '@/security/crypto';
 import { publish } from '@/services/channel';
 import { expiresAt as mediaExpiresAt } from '@/services/mediaExpiry';
-import { getRemoteClient } from '@/services/sync';
+import { getRemoteClient, notifyRemotePartner, uploadRemoteMedia } from '@/services/sync';
 import { ensureRemoteIdentity } from '@/services/sync';
 import { useAppStore } from '@/stores/app.store';
 import { ChatMessage, MediaExpiry, MessageType } from '@/types';
@@ -82,19 +82,22 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         sealedContent = await seal(content);
         storedContent = '';
         encryption = 'aes-gcm';
-      } catch {
-        encryption = 'unavailable';
+      } catch (error) {
+        console.error('Message encryption failed', error);
+        throw new Error('Message was not sent because encryption failed.');
       }
     }
 
     let mediaId: string | undefined;
     if (blob) {
       mediaId = crypto.randomUUID();
+      const sealedBytes = await sealBytes(new Uint8Array(await blob.arrayBuffer()));
       await db.media.put({
         id: mediaId,
-        blob,
+        blob: new Blob([sealedBytes], { type: 'application/octet-stream' }),
         mime: mime || blob.type || 'application/octet-stream',
         createdAt: new Date().toISOString(),
+        encrypted: true,
       });
     }
 
@@ -131,6 +134,17 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           if (!remoteSenderId || !remoteRoomId || remoteRoomId.startsWith('room-')) {
             throw new Error('This room has not been created on the configured Supabase project.');
           }
+          if (blob && mediaId) {
+            const encryptedMedia = await db.media.get(mediaId);
+            if (!encryptedMedia) throw new Error('Encrypted media is missing from local storage.');
+            await uploadRemoteMedia(
+              remoteRoomId,
+              mediaId,
+              encryptedMedia.blob,
+              mediaExpiry || 'keep',
+              mime || blob.type || 'application/octet-stream',
+            );
+          }
           const { error } = await client.from('chat_messages').insert({
             id: message.id,
             room_id: remoteRoomId,
@@ -139,11 +153,22 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             sealed_content: sealedContent,
             media_id: mediaId,
             media_expiry: mediaExpiry,
+            media_type: type === 'image' || type === 'video' || type === 'voice' ? type : null,
+            media_mime: mime || blob?.type || null,
             expires_at: null,
           });
           if (error) throw error;
+          void notifyRemotePartner(remoteRoomId, 'message').catch((notifyError: unknown) => {
+            console.error('Private message push notification failed', notifyError);
+          });
         } catch (error) {
           console.error('Remote chat insert failed', error);
+          set((state) => ({
+            messages: state.messages.map((item) =>
+              item.id === message.id ? { ...item, status: 'sending' } : item,
+            ),
+          }));
+          throw new Error('Message could not be delivered to the paired device.');
         }
       }
     }

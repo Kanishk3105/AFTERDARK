@@ -6,6 +6,7 @@ export interface MediaRecord {
   blob: Blob;
   mime: string;
   createdAt: string;
+  encrypted?: boolean;
 }
 
 export interface HistoryRecord {

@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { IntensityLevel, MoodId } from '@/types';
+import { clearRoomKey } from '@/security/crypto';
+import { saveRemoteNotificationPreferences } from '@/services/sync';
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -67,6 +69,17 @@ export const SettingsPage: React.FC = () => {
     updatePreferences({ excludedTopics: current.filter((t) => t !== topic) });
   };
 
+  const saveNotifications = (next: typeof preferences.notifications) => {
+    updatePreferences({ notifications: next });
+    void saveRemoteNotificationPreferences(roomId, {
+      ...next,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    }).catch((error: unknown) => {
+      console.error('Saving remote notification preferences failed', error);
+      showToast('Notification preferences were saved locally but not synced.', 'warning');
+    });
+  };
+
   const handleConfirmClearData = async () => {
     try {
       await clearAllMessages();
@@ -83,6 +96,10 @@ export const SettingsPage: React.FC = () => {
   const handleConfirmUnpair = async () => {
     try {
       const remotelyRevoked = await revokeRemoteRoom(roomId);
+      await clearAllMessages();
+      await clearHistory();
+      resetTrophies();
+      await clearRoomKey();
       resetAll();
       setShowUnpairModal(false);
       showToast(
@@ -206,11 +223,9 @@ export const SettingsPage: React.FC = () => {
                 type="checkbox"
                 checked={preferences.notifications[key]}
                 onChange={(e) =>
-                  updatePreferences({
-                    notifications: {
-                      ...preferences.notifications,
-                      [key]: e.target.checked,
-                    },
+                  saveNotifications({
+                    ...preferences.notifications,
+                    [key]: e.target.checked,
                   })
                 }
                 className="rounded border-ad-burgundy/40 text-ad-red h-4 w-4 bg-ad-bg"
@@ -224,11 +239,9 @@ export const SettingsPage: React.FC = () => {
                 type="time"
                 value={preferences.notifications.quietHoursStart || ''}
                 onChange={(e) =>
-                  updatePreferences({
-                    notifications: {
-                      ...preferences.notifications,
-                      quietHoursStart: e.target.value || undefined,
-                    },
+                  saveNotifications({
+                    ...preferences.notifications,
+                    quietHoursStart: e.target.value || undefined,
                   })
                 }
                 className="w-full bg-ad-bg border border-ad-burgundy/40 rounded-xl px-2 py-1.5 text-xs"
@@ -240,11 +253,9 @@ export const SettingsPage: React.FC = () => {
                 type="time"
                 value={preferences.notifications.quietHoursEnd || ''}
                 onChange={(e) =>
-                  updatePreferences({
-                    notifications: {
-                      ...preferences.notifications,
-                      quietHoursEnd: e.target.value || undefined,
-                    },
+                  saveNotifications({
+                    ...preferences.notifications,
+                    quietHoursEnd: e.target.value || undefined,
                   })
                 }
                 className="w-full bg-ad-bg border border-ad-burgundy/40 rounded-xl px-2 py-1.5 text-xs"

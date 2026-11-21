@@ -51,33 +51,34 @@ duplicates and the full catalogue threshold.
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Complete and tested | `npm test`; latest run: 40 tests passed. |
-| Supabase room authorization | Complete and tested locally | `.\scripts\verify-supabase.ps1`; 8 pgTAP assertions cover room creation, cross-room visibility, invitation join, two-member cap, rejection and revocation. No production project tested. |
-| Supabase room/game/chat Realtime | Implemented but externally unverified | Authenticated anonymous identity and room RPCs are wired; game state, storage, actual remote pairing/chat, and live Realtime are not end-to-end verified. |
-| Photo/video/gallery/voice plugins | Implemented but externally unverified | Native integrations compile. No emulator/device is attached; preview, retake, recipient playback, lifecycle and cleanup are not physically verified. Native voice currently sends after stop without preview. |
-| Disappearing media | Implemented but externally unverified | Local timed expiry starts on first view and survives local restart via IndexedDB. Server-side deletion/access denial, remote attachment storage and true view-once are not implemented. |
-| FCM notifications | Blocked by Firebase project configuration and server dispatch | Android push plugin is present; no `google-services.json`, secure token lifecycle, server dispatch or live FCM test. |
-| End-to-end encryption | Incomplete | AES-GCM text sealing exists, but key exchange, device-protected storage, rotation, media encryption and a complete E2E pipeline are missing. Do not market the app as E2EE. |
-| Android debug build | Complete and tested | Fresh debug APK built by `npm run android:assemble`; Android `versionName` is 0.1.0, `versionCode` 1. No device launch test. |
-| Physical two-phone use | Blocked by unavailable devices and production backend | ADB listed no connected emulator or phone. No live Supabase project credentials are configured. |
+| Unit tests | Tested | `npm test`; latest run: 43 tests passed across 9 files. |
+| Supabase schema and local configuration | Implemented, not locally executed | Versioned migrations, RLS, Edge Functions, local `config.toml` and pgTAP media/room tests exist. Local `supabase db reset` could not run because Docker Desktop is unavailable. |
+| Supabase remote chat | Implemented but externally unverified | Authenticated room RPCs, message subscription and encrypted media upload/view endpoints are wired. Live two-phone relay, offline retry and full game-state sync are not tested; Anywhere mode remains disabled. |
+| Photo/video/gallery/voice | Implemented but device-unverified | Native plugins compile; capture/gallery/voice now show preview before explicit send. Media bytes are sealed locally and for remote upload. No physical device or emulator is attached. |
+| Disappearing media | Server implementation added; backend tests not executed | SQL enforces membership, first-view expiry and atomic view-once claim. Edge Functions stream authorized media and retry cleanup. Cleanup needs a scheduled invocation; interrupted view-once downloads can be consumed. |
+| FCM notifications | Pipeline implemented; externally unverified | Native registration listener, room token registration, server preference/quiet-hours check and generic FCM HTTP v1 dispatch are wired. Firebase project and service account are absent. |
+| End-to-end encryption | Incomplete; do not market as E2EE | Android local key storage and AES-GCM message/media encryption exist. The invite still transports a shared raw room key; authenticated protocol handshake, ratchet, replay protection, device revocation/key rotation and independent-device crypto tests remain missing. |
+| Android debug build | Tested | Fresh `npm run android:assemble` passed using JDK 21. APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. No device launch test. |
+| Physical two-phone use | Not tested | ADB found no connected emulator or phone. No live Supabase project credentials are configured. |
 | Release signing | Blocked by owner-controlled signing key | No keystore was created. The owner must create and securely back up the production signing key once, then store it outside the repository. |
 
-Use [the Android manual checklist](./ANDROID_MANUAL_VERIFICATION.md) for owner
-testing on devices. It identifies flows that cannot pass until missing media
-and remote-delivery support is implemented.
+Use [the Android manual checklist](./ANDROID_MANUAL_VERIFICATION.md) for device
+testing. It intentionally records physical-device checks as pending.
 
 ## Production setup still required
 
-- Configure production Supabase URL and public anon key, enable anonymous
-  sign-in, apply versioned migrations, and enable Realtime for `chat_messages`.
-- Complete and validate remote game-state synchronization, media storage and
-  media access control before claiming two-phone or disappearing-media support.
-- Configure Firebase project/package identity, add the owner-provided
-  `google-services.json`, deploy a credential-protected notification sender,
-  and test token refresh/removal and notification preferences.
-- Complete each game-specific mechanic above and test it on two independent
-  devices before calling the game suite release-ready.
+- Replace shared-room-key invitation transport with an established,
+  authenticated E2E protocol before sending sensitive content remotely.
+- Complete remote game-session synchronization, reconnection and retry
+  handling; per-game mechanics listed above remain in progress.
+- Run Supabase reset/pgTAP tests with Docker, deploy the migrations/functions,
+  configure Realtime and schedule cleanup.
+- Configure Firebase project/package identity, add owner-provided
+  `google-services.json`, deploy FCM secrets and verify real push delivery.
+- Execute the physical-device and two-phone checklist.
 - Generate/back up an owner-controlled Android signing key before any release
   signing. Never commit it.
 
-No live cloud, FCM, physical camera or two-phone verification is claimed.
+The 11,075 eligible-content catalogue audit is reproducible with
+`node .\scripts\report-content-catalogue.mjs`. No live cloud, FCM, physical
+camera, or two-phone verification is claimed.

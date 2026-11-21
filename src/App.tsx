@@ -31,7 +31,9 @@ function App() {
 
   useEffect(() => {
     hydrate();
-    void initializeNotifications();
+    void initializeNotifications().catch((error: unknown) => {
+      console.error('Notification initialization failed', error);
+    });
     const unsubscribe = subscribe((envelope) => {
       if (envelope.type !== 'chat') return;
       const roomCode = useAppStore.getState().roomCode;
@@ -50,6 +52,8 @@ function App() {
           sealed_content?: string;
           media_id?: string;
           media_expiry?: ChatMessage['mediaExpiry'];
+          media_type?: ChatMessage['type'];
+          media_mime?: string;
         };
         const senderId = row.sender_device_id;
         if (!row.id || !senderId || senderId === useAppStore.getState().deviceId) return;
@@ -58,12 +62,13 @@ function App() {
           roomId: roomCode,
           senderId,
           senderName: 'Partner',
-          type: row.media_id ? 'image' : 'text',
+          type: row.media_type || (row.media_id ? 'image' : 'text'),
           content: '',
           sealedContent: row.sealed_content,
           encryption: row.sealed_content ? 'aes-gcm' : 'plaintext',
           mediaId: row.media_id,
           mediaExpiry: row.media_expiry,
+          mediaMime: row.media_mime,
           reactions: {},
           status: 'delivered',
           createdAt: new Date().toISOString(),

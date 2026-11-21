@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/app.store';
 import { useChatStore } from '@/stores/chat.store';
 import { db } from '@/data/db';
-import { openSeal, isSealed } from '@/security/crypto';
+import { openSeal, openSealBytes, isSealed } from '@/security/crypto';
 import { EMOJI_DECK } from '@/content/recipes';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -20,6 +20,7 @@ import {
 } from '@capacitor-community/video-recorder';
 import { VoiceRecorder } from '@independo/capacitor-voice-recorder';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
+import { downloadRemoteMedia } from '@/services/sync';
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export const ChatPage: React.FC = () => {
 
   // Dedicated In-Chat Camera & Video Recording States
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraMode, setCameraMode] = useState<'photo' | 'video'>('photo');
+  const [cameraMode, setCameraMode] = useState<'photo' | 'video' | 'voice'>('photo');
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
@@ -323,20 +324,22 @@ export const ChatPage: React.FC = () => {
   const sendCapturedMedia = async () => {
     if (!capturedBlob) return;
     const isVideo = capturedBlob.type.includes('video');
+    const isVoice = cameraMode === 'voice';
 
     await sendMessage({
       senderId: deviceId || 'me',
       senderName: playerName,
-      content: isVideo ? '🎥 Video message' : '📷 Photo message',
-      type: isVideo ? 'video' : 'image',
-      mediaExpiry: selectedExpiry,
+      content: isVoice ? '🎙️ Voice message' : isVideo ? '🎥 Video message' : '📷 Photo message',
+      type: isVoice ? 'voice' : isVideo ? 'video' : 'image',
+      mediaExpiry: isVoice ? undefined : selectedExpiry,
       blob: capturedBlob,
       mime: capturedBlob.type,
-      previewLabel: isVideo ? 'Video recording' : 'Captured photo',
+      previewLabel: isVoice ? 'Voice recording' : isVideo ? 'Video recording' : 'Captured photo',
       roomCode,
     });
 
     setIsCameraOpen(false);
+    if (capturedPreviewUrl) URL.revokeObjectURL(capturedPreviewUrl);
     setCapturedBlob(null);
     setCapturedPreviewUrl(null);
     showToast('Sent to partner', 'success');
@@ -367,19 +370,13 @@ export const ChatPage: React.FC = () => {
       audioChunksRef.current = [];
       const recorder = new MediaRecorder(stream);
       recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-      recorder.onstop = async () => {
+      recorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await sendMessage({
-          senderId: deviceId || 'me',
-          senderName: playerName,
-          content: '🎙️ Voice message',
-          type: 'voice',
-          blob: audioBlob,
-          mime: 'audio/webm',
-          roomCode,
-        });
+        setCapturedBlob(audioBlob);
+        setCapturedPreviewUrl(URL.createObjectURL(audioBlob));
+        setCameraMode('voice');
+        setIsCameraOpen(true);
         stream.getTracks().forEach((t) => t.stop());
-        showToast('Voice note sent', 'success');
       };
       recorder.start();
       audioRecorderRef.current = recorder;
@@ -409,17 +406,11 @@ export const ChatPage: React.FC = () => {
           const bytes = new Uint8Array(binary.length);
           for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
           const audioBlob = new Blob([bytes], { type: mime });
-          await sendMessage({
-            senderId: deviceId || 'me',
-            senderName: playerName,
-            content: '🎙️ Voice message',
-            type: 'voice',
-            blob: audioBlob,
-            mime,
-            roomCode,
-          });
+          setCapturedBlob(audioBlob);
+          setCapturedPreviewUrl(URL.createObjectURL(audioBlob));
+          setCameraMode('voice');
+          setIsCameraOpen(true);
           setIsRecordingAudio(false);
-          showToast('Voice note sent', 'success');
         } catch (error) {
           console.error('Native audio stop error', error);
           showToast('Could not save voice recording', 'error');
@@ -439,17 +430,11 @@ export const ChatPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    await sendMessage({
-      senderId: deviceId || 'me',
-      senderName: playerName,
-      content: file.type.includes('video') ? '🎥 Video' : '🖼️ Photo',
-      type: file.type.includes('video') ? 'video' : 'image',
-      mediaExpiry: selectedExpiry,
-      blob: file,
-      mime: file.type,
-      roomCode,
-    });
-    showToast('Attachment sent', 'success');
+    if (capturedPreviewUrl) URL.revokeObjectURL(capturedPreviewUrl);
+    setCapturedBlob(file);
+    setCapturedPreviewUrl(URL.createObjectURL(file));
+    setCameraMode(file.type.includes('video') ? 'video' : 'photo');
+    setIsCameraOpen(true);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -517,9 +502,9 @@ export const ChatPage: React.FC = () => {
             <div className="w-9 h-9 rounded-full border border-ad-gold/50 bg-ad-burgundy flex items-center justify-center font-bold text-xs text-ad-gold shadow-md">
               {partnerName.charAt(0).toUpperCase()}
             </div>
-            {showOnlineStatus && (
+            {showOnlineStatus ? (
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-ad-bg" />
-            )}
+            ) : null}
           </div>
 
           <div>
@@ -584,11 +569,28 @@ export const ChatPage: React.FC = () => {
                     className="mb-2 rounded-xl overflow-hidden bg-black/40 border border-white/10 p-2 text-center cursor-pointer"
                     onClick={async (e) => {
                       e.stopPropagation();
-                      const record = await db.media.get(msg.mediaId!);
-                      if (record?.blob) {
-                        setViewingMediaUrl(URL.createObjectURL(record.blob));
-                        setViewingMediaMime(record.mime);
+                      try {
+                        if (msg.deleted || isExpired(msg.expiresAt, Date.now(), msg.viewed)) {
+                          showToast('This media has expired.', 'info');
+                          return;
+                        }
+                        const record = await db.media.get(msg.mediaId!);
+                        let mediaBlob: Blob;
+                        if (record?.blob) {
+                          const bytes = new Uint8Array(await record.blob.arrayBuffer());
+                          const plain = record.encrypted ? await openSealBytes(bytes) : bytes;
+                          mediaBlob = new Blob([plain], { type: record.mime });
+                        } else {
+                          const encrypted = await downloadRemoteMedia(msg.mediaId!);
+                          const plain = await openSealBytes(new Uint8Array(await encrypted.arrayBuffer()));
+                          mediaBlob = new Blob([plain], { type: msg.mediaMime || msg.type });
+                        }
                         await markViewed(msg.id);
+                        setViewingMediaUrl(URL.createObjectURL(mediaBlob));
+                        setViewingMediaMime(msg.mediaMime || mediaBlob.type);
+                      } catch (error) {
+                        console.error('Media retrieval failed', error);
+                        showToast('This media could not be opened or has expired.', 'error');
                       }
                     }}
                   >
@@ -802,6 +804,7 @@ export const ChatPage: React.FC = () => {
             </button>
 
             {/* Mode Switcher */}
+            {cameraMode !== 'voice' && (
             <div className="flex bg-black/60 rounded-full p-1 border border-white/20">
               <button
                 onClick={() => startCamera('photo')}
@@ -820,21 +823,24 @@ export const ChatPage: React.FC = () => {
                 VIDEO
               </button>
             </div>
+            )}
 
             {/* Front / Rear Toggle */}
-            <button
+            {cameraMode !== 'voice' && <button
               onClick={toggleCameraFacing}
               className="text-white text-xl p-2 bg-white/10 rounded-full"
               title="Switch Camera"
             >
               🔄
-            </button>
+            </button>}
           </div>
 
           {/* Live Viewfinder / Preview Review */}
           <div className="relative flex-1 flex items-center justify-center my-4 overflow-hidden rounded-2xl bg-black border border-ad-burgundy/40">
             {capturedPreviewUrl ? (
-              cameraMode === 'video' ? (
+              cameraMode === 'voice' ? (
+                <audio src={capturedPreviewUrl} controls className="w-full px-6" />
+              ) : cameraMode === 'video' ? (
                 <video
                   src={capturedPreviewUrl}
                   controls
@@ -848,7 +854,7 @@ export const ChatPage: React.FC = () => {
                   className="w-full h-full object-contain"
                 />
               )
-            ) : (
+            ) : cameraMode !== 'voice' ? (
               <video
                 ref={videoElementRef}
                 autoPlay
@@ -856,7 +862,7 @@ export const ChatPage: React.FC = () => {
                 muted
                 className="w-full h-full object-cover"
               />
-            )}
+            ) : <p className="text-ad-text-secondary">No recording preview available.</p>}
 
             {/* Video Recording Timer Badge */}
             {isRecordingVideo && (
@@ -872,7 +878,7 @@ export const ChatPage: React.FC = () => {
             {capturedPreviewUrl ? (
               <div className="space-y-3">
                 {/* Disappearing Media Expiry Selector */}
-                <div className="flex items-center justify-center gap-1.5 text-[11px] bg-ad-bg-secondary/90 p-2 rounded-xl border border-ad-burgundy/40">
+                {cameraMode !== 'voice' && <div className="flex items-center justify-center gap-1.5 text-[11px] bg-ad-bg-secondary/90 p-2 rounded-xl border border-ad-burgundy/40">
                   <span className="text-ad-gold font-medium">Timer:</span>
                   {(['view-once', '5s', '10s', '30s', 'keep'] as MediaExpiry[]).map((exp) => (
                     <button
@@ -886,12 +892,23 @@ export const ChatPage: React.FC = () => {
                     </button>
                   ))}
                 </div>
+                }
 
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"
                     className="flex-1 text-red-300 border border-white/20"
-                    onClick={() => startCamera(cameraMode)}
+                    onClick={() => {
+                      if (capturedPreviewUrl) URL.revokeObjectURL(capturedPreviewUrl);
+                      setCapturedPreviewUrl(null);
+                      setCapturedBlob(null);
+                      if (cameraMode === 'voice') {
+                        setIsCameraOpen(false);
+                        void startAudioRecording();
+                      } else {
+                        void startCamera(cameraMode);
+                      }
+                    }}
                   >
                     ↺ Retake
                   </Button>

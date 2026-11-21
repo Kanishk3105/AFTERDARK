@@ -3,6 +3,7 @@ export interface SyncStatus {
   reason: string;
 }
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { MediaExpiry } from '@/types';
 
 let remoteClient: SupabaseClient | null = null;
 let identityPromise: Promise<string> | null = null;
@@ -75,6 +76,105 @@ export async function revokeRemoteRoom(roomId: string): Promise<boolean> {
   const { error } = await client.rpc('revoke_room', { target_room: roomId });
   if (error) throw error;
   return true;
+}
+
+export async function uploadRemoteMedia(
+  roomId: string,
+  mediaId: string,
+  blob: Blob,
+  expiry: MediaExpiry,
+  contentType: string,
+): Promise<void> {
+  const client = getRemoteClient();
+  if (!client) throw new Error('Remote media is not configured.');
+  await ensureRemoteIdentity();
+  if (roomId.startsWith('room-')) throw new Error('This room is only available locally.');
+
+  const { error } = await client.functions.invoke('media-upload', {
+    body: blob,
+    headers: {
+      'x-media-id': mediaId,
+      'x-room-id': roomId,
+      'x-expiry-policy': expiry,
+      'x-content-type': contentType,
+      'content-type': 'application/octet-stream',
+    },
+  });
+  if (error) throw error;
+}
+
+export async function downloadRemoteMedia(mediaId: string): Promise<Blob> {
+  const client = getRemoteClient();
+  if (!client) throw new Error('Remote media is not configured.');
+  await ensureRemoteIdentity();
+  const { data, error } = await client.functions.invoke('media-view', {
+    body: { mediaId },
+  });
+  if (error) throw error;
+  if (!(data instanceof Blob)) throw new Error('Media service returned an invalid response.');
+  return data;
+}
+
+export async function registerRemotePushToken(
+  roomId: string,
+  token: string,
+  platform = 'android',
+): Promise<void> {
+  const client = getRemoteClient();
+  if (!client) throw new Error('Remote notifications are not configured.');
+  await ensureRemoteIdentity();
+  if (roomId.startsWith('room-')) throw new Error('This room is only available locally.');
+  const { error } = await client.rpc('register_device_token', {
+    target_room: roomId,
+    push_token: token,
+    platform_name: platform,
+  });
+  if (error) throw error;
+}
+
+export async function notifyRemotePartner(
+  roomId: string,
+  kind: 'invitation' | 'message' | 'game' | 'turn' | 'completion' | 'trophy' | 'presence',
+): Promise<void> {
+  const client = getRemoteClient();
+  if (!client) return;
+  await ensureRemoteIdentity();
+  if (roomId.startsWith('room-')) return;
+  const { error } = await client.functions.invoke('push-notification', {
+    body: { roomId, kind },
+  });
+  if (error) throw error;
+}
+
+export async function saveRemoteNotificationPreferences(
+  roomId: string,
+  preferences: {
+    messages: boolean;
+    gameInvites: boolean;
+    partnerActivity: boolean;
+    trophies: boolean;
+    quietHoursStart?: string;
+    quietHoursEnd?: string;
+    timeZone: string;
+  },
+): Promise<void> {
+  const client = getRemoteClient();
+  if (!client || roomId.startsWith('room-')) return;
+  const userId = await ensureRemoteIdentity();
+  if (!userId) throw new Error('Remote identity is unavailable.');
+  const { error } = await client.from('notification_settings').upsert({
+    user_id: userId,
+    room_id: roomId,
+    messages: preferences.messages,
+    game_invites: preferences.gameInvites,
+    partner_activity: preferences.partnerActivity,
+    trophies: preferences.trophies,
+    quiet_hours_start: preferences.quietHoursStart || null,
+    quiet_hours_end: preferences.quietHoursEnd || null,
+    time_zone: preferences.timeZone,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id,room_id' });
+  if (error) throw error;
 }
 
 export async function subscribeRemoteRoom(

@@ -1,6 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { useAppStore } from '@/stores/app.store';
+import { registerRemotePushToken } from '@/services/sync';
 
 export type NotificationKind =
   | 'invitation'
@@ -21,6 +23,9 @@ export interface NotificationPreferenceSnapshot {
   quietHoursStart?: string;
   quietHoursEnd?: string;
 }
+
+let pushListenerReady: Promise<void> | null = null;
+let latestPushToken: string | null = null;
 
 export function notificationEnabled(
   kind: NotificationKind,
@@ -59,24 +64,55 @@ export async function initializeNotifications(): Promise<{
   }
 
   let pushReady = false;
-  let token: string | undefined;
-  const pushPermission = await PushNotifications.requestPermissions();
-  if (pushPermission.receive === 'granted') {
-    await PushNotifications.register();
-    pushReady = true;
+  const preferences = useAppStore.getState().preferences.notifications;
+  const wantsPush = preferences.messages || preferences.gameInvites ||
+    preferences.partnerActivity || preferences.trophies;
+  if (wantsPush) {
+    if (!pushListenerReady) {
+      pushListenerReady = (async () => {
+        await PushNotifications.addListener('registration', ({ value }) => {
+          latestPushToken = value;
+          const roomId = useAppStore.getState().roomId;
+          if (roomId) {
+            void registerRemotePushToken(roomId, value).catch((error: unknown) => {
+              console.error('Push token registration failed', error);
+            });
+          }
+        });
+        await PushNotifications.addListener('registrationError', (error) => {
+          console.error('Native push registration failed', error);
+        });
+      })().catch((error: unknown) => {
+        pushListenerReady = null;
+        throw error;
+      });
+    }
+    await pushListenerReady;
+    const pushPermission = await PushNotifications.checkPermissions();
+    const permission = pushPermission.receive === 'granted'
+      ? pushPermission
+      : await PushNotifications.requestPermissions();
+    if (permission.receive === 'granted') {
+      await PushNotifications.register();
+      pushReady = true;
+    }
   }
-  const localPermission = await LocalNotifications.requestPermissions();
-  if (localPermission.display === 'granted') {
-    await PushNotifications.addListener('registration', (result) => {
-      token = result.value;
-    });
-  }
+  const currentLocalPermission = await LocalNotifications.checkPermissions();
+  const localPermission = currentLocalPermission.display === 'granted'
+    ? currentLocalPermission
+    : await LocalNotifications.requestPermissions();
 
   return {
     localReady: localPermission.display === 'granted',
     pushReady,
-    token,
+    token: latestPushToken || undefined,
   };
+}
+
+export async function registerStoredPushToken(): Promise<void> {
+  const roomId = useAppStore.getState().roomId;
+  if (!roomId || !latestPushToken) return;
+  await registerRemotePushToken(roomId, latestPushToken);
 }
 
 export async function showLocalNotification(
