@@ -1,13 +1,16 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
 
 export const LoadingScreen: React.FC<{ message?: string }> = ({
   message = 'Entering your private room...',
 }) => {
+  const reduceMotion = useReducedMotion();
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-ad-bg text-ad-text p-6">
       <motion.div
-        animate={{
+        animate={reduceMotion ? undefined : {
           scale: [1, 1.08, 1],
           opacity: [0.7, 1, 0.7],
         }}
@@ -18,9 +21,14 @@ export const LoadingScreen: React.FC<{ message?: string }> = ({
         }}
         className="relative flex items-center justify-center"
       >
-        <div className="w-24 h-24 rounded-full border border-ad-gold/30 bg-gradient-to-br from-ad-red/20 to-ad-burgundy/40 flex items-center justify-center shadow-2xl shadow-ad-red/40">
-          <span className="text-4xl select-none">🌹</span>
-        </div>
+        <img
+          src={AFTERDARK_ASSETS.ui.loadingRose}
+          alt=""
+          aria-hidden="true"
+          className="h-32 w-40 rounded-2xl object-cover shadow-2xl shadow-ad-red/40"
+          loading="eager"
+          decoding="async"
+        />
       </motion.div>
 
       <motion.h1

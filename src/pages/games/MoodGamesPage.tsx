@@ -6,6 +6,7 @@ import { MoodArtwork } from '@/components/branding/MoodArtwork';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { GameCover } from '@/components/branding/GameCover';
 import { MoodId } from '@/types';
 
 export const MoodGamesPage: React.FC = () => {
@@ -86,7 +87,7 @@ export const MoodGamesPage: React.FC = () => {
                 className="p-4 hover:border-ad-gold/50 cursor-pointer transition-all active:scale-[0.99] border-ad-burgundy/40"
               >
                 <div className="flex items-start gap-3.5">
-                  <div className="text-3xl select-none pt-0.5">{game.emoji}</div>
+                  <GameCover gameId={game.id} className="h-[4.25rem] w-[5rem] flex-shrink-0" />
                   <div className="space-y-1.5 flex-1">
                     <div className="flex items-center justify-between">
                       <h3 className="font-display text-sm font-bold text-ad-text">

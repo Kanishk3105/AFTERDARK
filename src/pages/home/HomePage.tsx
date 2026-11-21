@@ -6,6 +6,7 @@ import { useGameStore } from '@/stores/game.store';
 import { useTrophyStore } from '@/stores/trophy.store';
 import { MOODS, APP_CONFIG } from '@/config/app.config';
 import { MoodArtwork } from '@/components/branding/MoodArtwork';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
 import { Button } from '@/components/ui/Button';
 import type { PlayMode } from '@/types';
 
@@ -37,7 +38,9 @@ export const HomePage: React.FC = () => {
     <div className="home-screen">
       <header className="home-masthead">
         <div className="home-brand">
-          <span className="home-brand-mark" aria-hidden="true">A</span>
+          <span className="home-brand-mark" aria-hidden="true">
+            <img src={AFTERDARK_ASSETS.brand.appIcon} alt="" className="h-full w-full rounded-full object-cover p-0.5" />
+          </span>
           <span className="home-brand-copy">
             <span className="home-brand-name">{APP_CONFIG.name}</span>
             <span className="home-brand-caption">A PRIVATE ROOM FOR TWO</span>
@@ -75,8 +78,7 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
         <div className="home-hero-seal" aria-hidden="true">
-          <span>✦</span>
-          <span>FOR<br />TWO</span>
+          <img src={AFTERDARK_ASSETS.brand.wordmark} alt="" className="home-hero-wordmark" loading="lazy" decoding="async" />
         </div>
       </section>
 
@@ -103,7 +105,12 @@ export const HomePage: React.FC = () => {
               <span className="home-mode-label">{mode.label}</span>
               {mode.available
                 ? <span className="home-mode-check" aria-hidden="true">✓</span>
-                : <span className="home-mode-lock" aria-hidden="true">LOCKED</span>}
+                : (
+                  <span className="home-mode-lock" aria-hidden="true">
+                    <img src={AFTERDARK_ASSETS.ui.lockedBadge} alt="" className="home-mode-lock-art" loading="lazy" decoding="async" />
+                    LOCKED
+                  </span>
+                )}
             </button>
           ))}
         </div>

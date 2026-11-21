@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { MOODS } from '@/config/app.config';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { GameCover } from '@/components/branding/GameCover';
 import { MoodId } from '@/types';
 
 export const GamesPage: React.FC = () => {
@@ -104,7 +105,7 @@ export const GamesPage: React.FC = () => {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="text-3xl select-none pt-0.5">{game.emoji}</div>
+                  <GameCover gameId={game.id} className="h-[4.25rem] w-[5rem] flex-shrink-0" />
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-display text-sm font-bold text-ad-text">

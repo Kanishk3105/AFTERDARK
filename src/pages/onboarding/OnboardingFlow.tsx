@@ -20,6 +20,7 @@ import { noteRoomCreated } from '@/games/awards';
 import { CoupleConfig, IntensityLevel } from '@/types';
 import { createRemoteRoom } from '@/services/sync';
 import { registerStoredPushToken } from '@/services/notifications';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
 
 export const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
@@ -175,11 +176,30 @@ export const OnboardingFlow: React.FC = () => {
             STEP {step + 1} OF {totalSteps}
           </span>
         </div>
-        <ProgressBar value={((step + 1) / totalSteps) * 100} size="sm" />
+        <div className="relative">
+          <img
+            src={AFTERDARK_ASSETS.ui.progressTrack}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full rounded-full object-cover opacity-[0.12]"
+            loading="lazy"
+            decoding="async"
+          />
+          <ProgressBar value={((step + 1) / totalSteps) * 100} size="sm" />
+        </div>
       </div>
 
       {/* Main Step Content Carousel */}
       <div className="flex-1 flex flex-col justify-center py-6">
+        <img
+          key={step}
+          src={AFTERDARK_ASSETS.onboarding[step]}
+          alt=""
+          aria-hidden="true"
+          className="mb-5 h-32 w-full rounded-2xl border border-ad-gold/20 object-cover shadow-lg shadow-ad-red/10"
+          loading={step === 0 ? 'eager' : 'lazy'}
+          decoding="async"
+        />
         <AnimatePresence mode="wait">
           {/* STEP 0: Your Identity */}
           {step === 0 && (

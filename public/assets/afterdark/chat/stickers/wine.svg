@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Toast chat sticker</title><desc id="desc">Original AFTERDARK decorative illustration, burgundy, black and antique gold theme.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d060a"/><stop offset=".52" stop-color="#310a1b"/><stop offset="1" stop-color="#070405"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c8"/><stop offset=".28" stop-color="#d5aa6d"/><stop offset=".7" stop-color="#8c5b2b"/><stop offset="1" stop-color="#f7d99a"/></linearGradient>
+ <linearGradient id="ruby" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ff7b83"/><stop offset=".35" stop-color="#9e1635"/><stop offset="1" stop-color="#310612"/></linearGradient>
+ <radialGradient id="glow"><stop offset="0" stop-color="#d92a52" stop-opacity=".35"/><stop offset="1" stop-color="#d92a52" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="28"/></filter>
+ <filter id="shadow"><feGaussianBlur stdDeviation="5"/></filter>
+ <pattern id="grain" width="88" height="88" patternUnits="userSpaceOnUse"><circle cx="8" cy="11" r="1" fill="#f6d7a0" opacity=".16"/><circle cx="53" cy="37" r=".8" fill="#fff" opacity=".08"/><circle cx="71" cy="77" r="1" fill="#f4b1ae" opacity=".12"/></pattern>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<ellipse cx="389.1" cy="122.9" rx="153.6" ry="174.1" fill="url(#glow)" filter="url(#soft)"/>
+<rect width="512" height="512" fill="url(#grain)" opacity=".55"/>
+<rect x="24" y="24" width="464" height="464" rx="34" fill="none" stroke="url(#gold)" stroke-opacity=".36" stroke-width="2"/>
+<path d="M 330 170 H 500 V 400 Q 500 520 415 540 Q 330 520 330 400Z M 700 170 H 870 V 400 Q 870 520 785 540 Q 700 520 700 400Z" fill="#6e1329" stroke="url(#gold)" stroke-width="12"/><path d="M 415 540 V 730 M 785 540 V 730 M 335 730 H 495 M 705 730 H 865" stroke="url(#gold)" stroke-width="18"/>
+</svg>

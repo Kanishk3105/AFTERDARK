@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '@/stores/app.store';
 import { APP_CONFIG } from '@/config/app.config';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 
@@ -41,6 +42,15 @@ export const SplashPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-ad-bg flex flex-col justify-between items-center text-center p-6 overflow-hidden select-none">
+      <img
+        src={AFTERDARK_ASSETS.brand.splash}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover object-center opacity-55"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+      />
       {/* Background Cinematic Atmosphere */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-ad-burgundy/40 via-ad-bg to-ad-bg pointer-events-none" />
 
@@ -85,10 +95,15 @@ export const SplashPage: React.FC = () => {
           transition={{ duration: reduceMotion ? 0 : 1.2, type: 'spring' }}
           className="relative mb-6"
         >
-          <div className="w-24 h-24 rounded-full border-2 border-ad-gold/40 bg-gradient-to-br from-ad-burgundy via-ad-red/40 to-ad-bg flex items-center justify-center shadow-2xl shadow-ad-red/40">
-            <span className="text-4xl filter drop-shadow-[0_0_12px_rgba(213,170,109,0.5)]">🌹</span>
-          </div>
-          <div className={`absolute inset-0 rounded-full border border-ad-gold/20 opacity-30 ${reduceMotion ? '' : 'animate-ping'}`} />
+          <img
+            src={AFTERDARK_ASSETS.brand.emblem}
+            alt=""
+            aria-hidden="true"
+            className="h-24 w-36 rounded-xl border border-ad-gold/40 object-cover shadow-2xl shadow-ad-red/40"
+            loading="eager"
+            decoding="async"
+          />
+          <div className={`absolute inset-0 rounded-xl border border-ad-gold/20 opacity-30 ${reduceMotion ? '' : 'animate-ping'}`} />
         </motion.div>
 
         {/* Brand Name */}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+<title id="title">Storyteller trophy badge</title><desc id="desc">Original AFTERDARK decorative illustration, burgundy, black and antique gold theme.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#090509"/><stop offset=".52" stop-color="#280913"/><stop offset="1" stop-color="#070405"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c8"/><stop offset=".28" stop-color="#d5aa6d"/><stop offset=".7" stop-color="#8c5b2b"/><stop offset="1" stop-color="#f7d99a"/></linearGradient>
+ <linearGradient id="ruby" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ff7b83"/><stop offset=".35" stop-color="#9e1635"/><stop offset="1" stop-color="#310612"/></linearGradient>
+ <radialGradient id="glow"><stop offset="0" stop-color="#d92a52" stop-opacity=".35"/><stop offset="1" stop-color="#d92a52" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="28"/></filter>
+ <filter id="shadow"><feGaussianBlur stdDeviation="5"/></filter>
+ <pattern id="grain" width="88" height="88" patternUnits="userSpaceOnUse"><circle cx="8" cy="11" r="1" fill="#f6d7a0" opacity=".16"/><circle cx="53" cy="37" r=".8" fill="#fff" opacity=".08"/><circle cx="71" cy="77" r="1" fill="#f4b1ae" opacity=".12"/></pattern>
+</defs>
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<ellipse cx="778.2" cy="245.8" rx="307.2" ry="348.2" fill="url(#glow)" filter="url(#soft)"/>
+<rect width="1024" height="1024" fill="url(#grain)" opacity=".55"/>
+<rect x="24" y="24" width="976" height="976" rx="34" fill="none" stroke="url(#gold)" stroke-opacity=".36" stroke-width="2"/>
+<circle cx="600" cy="420" r="315" fill="#12070d" stroke="url(#gold)" stroke-width="18"/><circle cx="600" cy="420" r="275" fill="none" stroke="#8f1b37" stroke-width="8"/><path d="M 600 300 Q 370 190 250 310 V 650 Q 420 555 600 690 Q 780 555 950 650 V 310 Q 830 190 600 300Z" fill="#1a0810" stroke="url(#gold)" stroke-width="12"/><path d="M 600 310 V 690" stroke="#cf9d60" stroke-width="9"/><path d="M 310 390 Q 455 325 550 390 M 310 470 Q 455 405 550 470 M 650 390 Q 795 325 900 390 M 650 470 Q 795 405 900 470" fill="none" stroke="#bb344e" stroke-width="8"/><path d="M 250 730 Q 600 620 950 730" stroke="url(#gold)" stroke-width="8" fill="none"/>
+</svg>

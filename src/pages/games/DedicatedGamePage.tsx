@@ -56,6 +56,8 @@ import {
 } from '@/games/dedicated';
 import { EMOJI_DECK } from '@/content/recipes';
 import type { PreferenceChoice } from '@/games/dedicated';
+import { GameCover } from '@/components/branding/GameCover';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
 
 interface Props {
   gameId: string;
@@ -350,6 +352,7 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
         <Badge variant="gold" size="sm">{gameId.replace(/-/g, ' ')}</Badge>
         <span className="text-xs text-ad-gold">{playerName} & {partnerName}</span>
       </div>
+      <GameCover gameId={gameId} className="h-32 w-full" />
 
       {isPrivateChoice && (
         <>
@@ -655,6 +658,14 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
           <h2 className="font-display text-lg">
             {scenario.status === 'draft' ? 'Build a scenario together' : 'Partner approval'}
           </h2>
+          <img
+            src={AFTERDARK_ASSETS.scenes.privateLounge}
+            alt=""
+            aria-hidden="true"
+            className="h-28 w-full rounded-xl object-cover"
+            loading="lazy"
+            decoding="async"
+          />
           {scenario.status === 'draft' && (
             <>
               {scenarioFields.map((field) => (
@@ -794,8 +805,25 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
           <h2 className="font-display text-lg">
             {gameId === 'romantic-roulette' ? 'Romantic Roulette' : gameId === 'naughty-roulette' ? 'Naughty Roulette' : 'Fantasy Roulette'}
           </h2>
-          <div className="w-36 h-36 mx-auto rounded-full border-4 border-dashed border-ad-gold/60 flex items-center justify-center text-5xl">
-            {roulette.currentCard ? '✨' : '🎰'}
+          <div className="relative mx-auto h-36 w-36 overflow-hidden rounded-full border-4 border-dashed border-ad-gold/60">
+            <img
+              src={AFTERDARK_ASSETS.ui.rouletteWheel}
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            {gameId === 'fantasy-roulette' && (
+              <img
+                src={AFTERDARK_ASSETS.ui.dice}
+                alt=""
+                aria-hidden="true"
+                className="absolute bottom-1 right-1 h-8 w-10 rounded-md object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            )}
           </div>
           <p className="text-[10px] uppercase tracking-wider text-ad-text-secondary">
             {roulette.spinCount} {roulette.spinCount === 1 ? 'card' : 'cards'} revealed

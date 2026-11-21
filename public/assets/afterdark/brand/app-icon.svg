@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+<title id="title">AFTERDARK app icon</title><desc id="desc">Original AFTERDARK decorative illustration, burgundy, black and antique gold theme.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#080506"/><stop offset=".52" stop-color="#300913"/><stop offset="1" stop-color="#070405"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c8"/><stop offset=".28" stop-color="#d5aa6d"/><stop offset=".7" stop-color="#8c5b2b"/><stop offset="1" stop-color="#f7d99a"/></linearGradient>
+ <linearGradient id="ruby" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ff7b83"/><stop offset=".35" stop-color="#9e1635"/><stop offset="1" stop-color="#310612"/></linearGradient>
+ <radialGradient id="glow"><stop offset="0" stop-color="#d92a52" stop-opacity=".35"/><stop offset="1" stop-color="#d92a52" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="28"/></filter>
+ <filter id="shadow"><feGaussianBlur stdDeviation="5"/></filter>
+ <pattern id="grain" width="88" height="88" patternUnits="userSpaceOnUse"><circle cx="8" cy="11" r="1" fill="#f6d7a0" opacity=".16"/><circle cx="53" cy="37" r=".8" fill="#fff" opacity=".08"/><circle cx="71" cy="77" r="1" fill="#f4b1ae" opacity=".12"/></pattern>
+</defs>
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<ellipse cx="778.2" cy="245.8" rx="307.2" ry="348.2" fill="url(#glow)" filter="url(#soft)"/>
+<rect width="1024" height="1024" fill="url(#grain)" opacity=".55"/>
+<rect x="24" y="24" width="976" height="976" rx="34" fill="none" stroke="url(#gold)" stroke-opacity=".36" stroke-width="2"/>
+<circle cx="512" cy="512" r="430" fill="#15070d" stroke="url(#gold)" stroke-width="20"/>
+<circle cx="512" cy="512" r="378" fill="none" stroke="#8b1732" stroke-width="10"/>
+<ellipse cx="512.0" cy="330.0" rx="40.8" ry="60.0" transform="rotate(-5 512.0 330.0)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="2.6"/><ellipse cx="454.4" cy="373.2" rx="40.8" ry="60.0" transform="rotate(-38 454.4 373.2)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="2.6"/><ellipse cx="569.6" cy="373.2" rx="40.8" ry="60.0" transform="rotate(38 569.6 373.2)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="2.6"/><ellipse cx="473.6" cy="433.2" rx="40.8" ry="60.0" transform="rotate(-25 473.6 433.2)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="2.6"/><ellipse cx="550.4" cy="433.2" rx="40.8" ry="60.0" transform="rotate(25 550.4 433.2)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="2.6"/><ellipse cx="512.0" cy="406.8" rx="40.8" ry="60.0" transform="rotate(0 512.0 406.8)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="2.6"/><path d="M 512 442.8 C 495.2 510.0, 538.4 553.2, 524.0 601.2" stroke="#b58c4f" stroke-width="9.6" fill="none" stroke-linecap="round"/><path d="M 524.0 524.4 Q 593.6 462.0 600.8 524.4 Q 557.6 562.8 524.0 524.4" fill="#29422d" stroke="#b58c4f" stroke-width="2.4"/>
+<text x="512" y="735" text-anchor="middle" font-family="Georgia,serif" font-size="80" letter-spacing="9" fill="url(#gold)">A</text>
+</svg>

@@ -7,6 +7,8 @@ import { useGameStore } from '@/stores/game.store';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { GameCover } from '@/components/branding/GameCover';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
 import { IntensityLevel, MoodId } from '@/types';
 
 export const GameDetailPage: React.FC = () => {
@@ -64,9 +66,7 @@ export const GameDetailPage: React.FC = () => {
         animate={{ opacity: 1, scale: 1 }}
         className="p-6 rounded-3xl bg-gradient-to-b from-ad-burgundy/50 via-ad-bg-secondary to-ad-bg border border-ad-burgundy/60 text-center space-y-3 shadow-2xl relative overflow-hidden"
       >
-        <div className="w-20 h-20 mx-auto rounded-2xl border border-ad-gold/40 bg-ad-red/20 flex items-center justify-center text-4xl shadow-xl shadow-ad-red/30">
-          {game.emoji}
-        </div>
+        <GameCover gameId={game.id} alt={`${game.name} artwork`} loading="eager" className="mx-auto h-40 w-full max-w-sm" />
 
         <div>
           <div className="flex items-center justify-center gap-2 mb-1">
@@ -82,6 +82,14 @@ export const GameDetailPage: React.FC = () => {
         <p className="text-xs text-ad-text-secondary max-w-xs mx-auto leading-relaxed">
           {game.description}
         </p>
+        <img
+          src={AFTERDARK_ASSETS.ui.ornateDivider}
+          alt=""
+          aria-hidden="true"
+          className="h-5 w-full object-cover opacity-75"
+          loading="lazy"
+          decoding="async"
+        />
 
         {/* Info Pills */}
         <div className="flex items-center justify-center gap-3 pt-2 text-xs text-ad-text-secondary font-mono">
@@ -135,7 +143,14 @@ export const GameDetailPage: React.FC = () => {
                     : 'border-ad-burgundy/40 bg-ad-bg-secondary/40 text-ad-text-secondary'
                 }`}
               >
-                <div className="text-base select-none">{lvl.emoji}</div>
+                <img
+                  src={AFTERDARK_ASSETS.intensity[lvl.id as IntensityLevel]}
+                  alt=""
+                  aria-hidden="true"
+                  className="mb-1 h-10 w-full rounded-lg object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div className="text-[10px] mt-0.5">{lvl.label}</div>
               </button>
             ))}

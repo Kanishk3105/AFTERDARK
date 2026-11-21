@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+<title id="title">AFTERDARK wordmark</title><desc id="desc">Original AFTERDARK decorative illustration, burgundy, black and antique gold theme.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#080506"/><stop offset=".52" stop-color="#300913"/><stop offset="1" stop-color="#070405"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c8"/><stop offset=".28" stop-color="#d5aa6d"/><stop offset=".7" stop-color="#8c5b2b"/><stop offset="1" stop-color="#f7d99a"/></linearGradient>
+ <linearGradient id="ruby" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ff7b83"/><stop offset=".35" stop-color="#9e1635"/><stop offset="1" stop-color="#310612"/></linearGradient>
+ <radialGradient id="glow"><stop offset="0" stop-color="#d92a52" stop-opacity=".35"/><stop offset="1" stop-color="#d92a52" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="28"/></filter>
+ <filter id="shadow"><feGaussianBlur stdDeviation="5"/></filter>
+ <pattern id="grain" width="88" height="88" patternUnits="userSpaceOnUse"><circle cx="8" cy="11" r="1" fill="#f6d7a0" opacity=".16"/><circle cx="53" cy="37" r=".8" fill="#fff" opacity=".08"/><circle cx="71" cy="77" r="1" fill="#f4b1ae" opacity=".12"/></pattern>
+</defs>
+<rect width="1200" height="700" fill="url(#bg)"/>
+<ellipse cx="912.0" cy="168.0" rx="360.0" ry="238.0" fill="url(#glow)" filter="url(#soft)"/>
+<rect width="1200" height="700" fill="url(#grain)" opacity=".55"/>
+<rect x="24" y="24" width="1152" height="652" rx="34" fill="none" stroke="url(#gold)" stroke-opacity=".36" stroke-width="2"/>
+<ellipse cx="600.0" cy="188.8" rx="21.2" ry="31.2" transform="rotate(-5 600.0 188.8)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="1.4"/><ellipse cx="570.0" cy="211.2" rx="21.2" ry="31.2" transform="rotate(-38 570.0 211.2)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="1.4"/><ellipse cx="630.0" cy="211.2" rx="21.2" ry="31.2" transform="rotate(38 630.0 211.2)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="1.4"/><ellipse cx="580.0" cy="242.5" rx="21.2" ry="31.2" transform="rotate(-25 580.0 242.5)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="1.4"/><ellipse cx="620.0" cy="242.5" rx="21.2" ry="31.2" transform="rotate(25 620.0 242.5)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="1.4"/><ellipse cx="600.0" cy="228.8" rx="21.2" ry="31.2" transform="rotate(0 600.0 228.8)" fill="#9b1833" stroke="#e2a65c" stroke-opacity=".5" stroke-width="1.4"/><path d="M 600 247.5 C 591.25 282.5, 613.75 305.0, 606.25 330.0" stroke="#b58c4f" stroke-width="5.0" fill="none" stroke-linecap="round"/><path d="M 606.25 290.0 Q 642.5 257.5 646.25 290.0 Q 623.75 310.0 606.25 290.0" fill="#29422d" stroke="#b58c4f" stroke-width="1.25"/>
+<text x="600" y="470" text-anchor="middle" font-family="Georgia,serif" font-size="112" letter-spacing="18" fill="url(#gold)">AFTERDARK</text>
+<path d="M 270 520 H 930" stroke="url(#gold)" stroke-width="2"/>
+<text x="600" y="590" text-anchor="middle" font-family="Georgia,serif" font-size="30" letter-spacing="7" fill="#ead8c7">A PRIVATE ROOM FOR TWO</text>
+</svg>

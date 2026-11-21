@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+<title id="title">Romantic Roulette cover art</title><desc id="desc">Original AFTERDARK decorative illustration, burgundy, black and antique gold theme.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19050d"/><stop offset=".52" stop-color="#510e22"/><stop offset="1" stop-color="#070405"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c8"/><stop offset=".28" stop-color="#d5aa6d"/><stop offset=".7" stop-color="#8c5b2b"/><stop offset="1" stop-color="#f7d99a"/></linearGradient>
+ <linearGradient id="ruby" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ff7b83"/><stop offset=".35" stop-color="#9e1635"/><stop offset="1" stop-color="#310612"/></linearGradient>
+ <radialGradient id="glow"><stop offset="0" stop-color="#d92a52" stop-opacity=".35"/><stop offset="1" stop-color="#d92a52" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="28"/></filter>
+ <filter id="shadow"><feGaussianBlur stdDeviation="5"/></filter>
+ <pattern id="grain" width="88" height="88" patternUnits="userSpaceOnUse"><circle cx="8" cy="11" r="1" fill="#f6d7a0" opacity=".16"/><circle cx="53" cy="37" r=".8" fill="#fff" opacity=".08"/><circle cx="71" cy="77" r="1" fill="#f4b1ae" opacity=".12"/></pattern>
+</defs>
+<rect width="1200" height="800" fill="url(#bg)"/>
+<ellipse cx="912.0" cy="192.0" rx="360.0" ry="272.0" fill="url(#glow)" filter="url(#soft)"/>
+<rect width="1200" height="800" fill="url(#grain)" opacity=".55"/>
+<rect x="24" y="24" width="1152" height="752" rx="34" fill="none" stroke="url(#gold)" stroke-opacity=".36" stroke-width="2"/>
+<g opacity=".25"><circle cx="600" cy="400" r="310" fill="none" stroke="url(#gold)" stroke-width="3"/><circle cx="600" cy="400" r="260" fill="none" stroke="#c32a4a" stroke-width="2" stroke-dasharray="5 16"/></g>
+        <g transform="translate(600 420) scale(1.55)">
+    <circle r="125" fill="#10070a" stroke="url(#gold)" stroke-width="8"/>
+    <circle r="98" fill="none" stroke="#b82044" stroke-width="32" stroke-dasharray="18 12"/>
+    <circle r="68" fill="#17070d" stroke="#d6a75f" stroke-width="5"/>
+    <circle r="18" fill="url(#gold)"/>
+    <path d="M 0 -128 L 18 -91 L -18 -91Z" fill="#f7dca5" stroke="#6f421e" stroke-width="3"/>
+    <path d="M 0 16.439999999999998 C -38.4 -9.48 -20.16 -39.239999999999995 0 -15.239999999999998 C 20.16 -39.239999999999995 38.4 -9.48 0 16.439999999999998Z" fill="url(#ruby)" stroke="url(#gold)" stroke-width="1.44"/>
+    </g>
+        <path d="M 180 705 Q 600 640 1020 705" fill="none" stroke="url(#gold)" stroke-opacity=".6" stroke-width="3"/>
+</svg>

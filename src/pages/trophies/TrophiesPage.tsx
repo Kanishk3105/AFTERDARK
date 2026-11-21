@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { getTrophyArt } from '@/assets/afterdark';
 
 export const TrophiesPage: React.FC = () => {
   const unlockedTrophies = useTrophyStore((s) => s.unlockedTrophies);
@@ -124,9 +125,14 @@ export const TrophiesPage: React.FC = () => {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-3xl filter drop-shadow select-none">
-                      {trophy.emoji}
-                    </span>
+                    <img
+                      src={getTrophyArt(trophy.id)}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-16 w-20 rounded-lg object-cover filter drop-shadow"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <Badge
                       variant={isUnlocked ? 'gold' : 'outline'}
                       size="sm"
@@ -178,9 +184,14 @@ export const TrophiesPage: React.FC = () => {
       >
         {selectedTrophy && (
           <div className="text-center space-y-4 py-2">
-            <div className="w-20 h-20 mx-auto rounded-full border-2 border-ad-gold/50 bg-ad-burgundy/40 flex items-center justify-center text-4xl shadow-xl shadow-ad-red/20">
-              {selectedTrophy.emoji}
-            </div>
+            <img
+              src={getTrophyArt(selectedTrophy.id)}
+              alt=""
+              aria-hidden="true"
+              className="mx-auto h-28 w-40 rounded-xl border-2 border-ad-gold/50 object-cover shadow-xl shadow-ad-red/20"
+              loading="lazy"
+              decoding="async"
+            />
 
             <div className="space-y-1">
               <h3 className="font-display text-lg font-bold text-white">

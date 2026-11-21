@@ -25,6 +25,22 @@ import {
   downloadRemoteMedia,
   releaseRemoteMediaView,
 } from '@/services/sync';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
+
+const chatStickers = [
+  { id: 'kiss', label: 'Kiss', emoji: '💋' },
+  { id: 'heart', label: 'Heart', emoji: '❤️' },
+  { id: 'flame', label: 'Flame', emoji: '🔥' },
+  { id: 'devil', label: 'Devil', emoji: '😈' },
+  { id: 'cuffs', label: 'Cuffs', emoji: '🔗' },
+  { id: 'mask', label: 'Mask', emoji: '🎭' },
+  { id: 'rose', label: 'Rose', emoji: '🌹' },
+  { id: 'wine', label: 'Wine', emoji: '🍷' },
+  { id: 'cherries', label: 'Cherries', emoji: '🍒' },
+  { id: 'feather', label: 'Feather', emoji: '🪶' },
+  { id: 'key', label: 'Key', emoji: '🗝️' },
+  { id: 'spark', label: 'Spark', emoji: '✨' },
+] as const;
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -491,7 +507,15 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] max-w-md mx-auto bg-ad-bg text-ad-text relative overflow-hidden">
+    <div className="relative isolate flex h-[calc(100vh-64px)] flex-col overflow-hidden bg-ad-bg text-ad-text max-w-md mx-auto">
+      <img
+        src={AFTERDARK_ASSETS.chat.background}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-20"
+        loading="lazy"
+        decoding="async"
+      />
       {/* Hidden gallery file picker */}
       <input
         ref={fileInputRef}
@@ -537,6 +561,19 @@ export const ChatPage: React.FC = () => {
 
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {messages.length === 0 && (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <img
+              src={AFTERDARK_ASSETS.chat.emptyState}
+              alt=""
+              aria-hidden="true"
+              className="mb-3 h-28 w-40 rounded-xl object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <p className="text-xs text-ad-text-secondary">Your private conversation starts here.</p>
+          </div>
+        )}
         {messages.map((msg) => {
           const isMe = msg.senderId === (deviceId || 'me');
           const isSystem = msg.type === 'system';
@@ -655,7 +692,15 @@ export const ChatPage: React.FC = () => {
                       Tap to view {msg.type}
                     </span>
                     {msg.mediaExpiry && msg.mediaExpiry !== 'keep' && (
-                      <span className="block text-[9px] text-ad-text-secondary mt-0.5">
+                      <span className="mt-0.5 flex items-center justify-center gap-1 text-[9px] text-ad-text-secondary">
+                        <img
+                          src={AFTERDARK_ASSETS.chat.viewOnceRing}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-5 w-5 rounded-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
                         ⏱ Expiry: {msg.mediaExpiry}
                       </span>
                     )}
@@ -665,7 +710,14 @@ export const ChatPage: React.FC = () => {
                 {/* Voice message */}
                 {msg.type === 'voice' && (
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">🎙️</span>
+                    <img
+                      src={AFTERDARK_ASSETS.chat.voiceWaveform}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-9 w-14 rounded-md object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <span className="text-xs font-mono">Voice message</span>
                   </div>
                 )}
@@ -751,10 +803,30 @@ export const ChatPage: React.FC = () => {
       {showEmojiPicker && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 160, opacity: 1 }}
+          animate={{ height: 230, opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           className="bg-ad-bg-secondary border-t border-ad-burgundy/40 p-3 overflow-y-auto"
         >
+          <div className="mb-3 grid grid-cols-6 gap-2">
+            {chatStickers.map((sticker) => (
+              <button
+                key={sticker.id}
+                type="button"
+                aria-label={`Add ${sticker.label} sticker`}
+                onClick={() => setInputText((prev) => `${prev}${sticker.emoji}`)}
+                className="flex min-h-9 items-center justify-center rounded-lg border border-ad-burgundy/30 bg-ad-bg/70 p-1 transition-transform hover:scale-105"
+              >
+                <img
+                  src={AFTERDARK_ASSETS.chat.stickers[sticker.id]}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-8 w-8 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-9 gap-2 text-xl text-center">
             {EMOJI_DECK.map((emoji: string) => (
               <button
@@ -844,7 +916,15 @@ export const ChatPage: React.FC = () => {
       {/* DEDICATED IN-CHAT CAMERA & VIDEO RECORDING MODAL */}
       {/* ========================================================= */}
       {isCameraOpen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4">
+        <div className="fixed inset-0 z-50 isolate flex flex-col justify-between overflow-hidden bg-black p-4">
+          <img
+            src={AFTERDARK_ASSETS.chat.cameraOverlay}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-20"
+            loading="lazy"
+            decoding="async"
+          />
           {/* Camera Header */}
           <div className="flex items-center justify-between z-10 pt-2">
             <button
@@ -890,7 +970,7 @@ export const ChatPage: React.FC = () => {
           </div>
 
           {/* Live Viewfinder / Preview Review */}
-          <div className="relative flex-1 flex items-center justify-center my-4 overflow-hidden rounded-2xl bg-black border border-ad-burgundy/40">
+          <div className="relative z-10 my-4 flex flex-1 items-center justify-center overflow-hidden rounded-2xl border border-ad-burgundy/40 bg-black">
             {capturedPreviewUrl ? (
               cameraMode === 'voice' ? (
                 <audio src={capturedPreviewUrl} controls className="w-full px-6" />

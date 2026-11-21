@@ -388,23 +388,21 @@
   right: 0.9rem;
   bottom: 1rem;
   display: flex;
-  width: 2.65rem;
-  height: 2.65rem;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 6rem;
+  height: 2.7rem;
+  overflow: hidden;
   border: 1px solid rgba(213, 170, 109, 0.25);
-  border-radius: 50%;
+  border-radius: 0.55rem;
   background: rgba(11, 5, 8, 0.48);
-  color: #d5aa6d;
-  font-size: 0.43rem;
-  letter-spacing: 0.13em;
-  line-height: 1.35;
-  text-align: center;
 }
 
-.home-hero-seal span:first-child {
-  font-size: 0.75rem;
+.home-hero-wordmark {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.78;
 }
 
 .home-section-heading {
@@ -499,10 +497,20 @@
 }
 
 .home-mode-lock {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
   margin-left: auto;
   color: #ba9ba4;
   font-size: 0.4rem;
   letter-spacing: 0.08em;
+}
+
+.home-mode-lock-art {
+  width: 1.15rem;
+  height: 0.85rem;
+  border-radius: 0.2rem;
+  object-fit: cover;
 }
 
 .home-mode-note {

@@ -33,6 +33,19 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useToast } from '@/components/ui/Toast';
 import { ContentCard, IntensityLevel, MoodId } from '@/types';
 import { DedicatedGamePage } from '@/pages/games/DedicatedGamePage';
+import { GameCover } from '@/components/branding/GameCover';
+import { AFTERDARK_ASSETS } from '@/assets/afterdark';
+
+const storyScenes: Record<string, string> = {
+  start: AFTERDARK_ASSETS.scenes.hotelSuite,
+  lift: AFTERDARK_ASSETS.scenes.mysteriousHallway,
+  porter: AFTERDARK_ASSETS.scenes.privateLounge,
+  host: AFTERDARK_ASSETS.scenes.privateVilla,
+  arrive: AFTERDARK_ASSETS.scenes.rooftopNight,
+  'ending-city': AFTERDARK_ASSETS.scenes.masqueradeBall,
+  'ending-note': AFTERDARK_ASSETS.scenes.hotelSuite,
+  'ending-door': AFTERDARK_ASSETS.scenes.privateLounge,
+};
 
 export const GamePlayPage: React.FC = () => {
   const { moodId, gameId } = useParams<{ moodId: string; gameId: string }>();
@@ -245,9 +258,12 @@ export const GamePlayPage: React.FC = () => {
             <span>✕</span> <span>Exit Game</span>
           </button>
 
-          <span className="font-display font-bold text-xs tracking-wider uppercase text-ad-gold">
-            {gameId?.replace(/-/g, ' ')}
-          </span>
+          <div className="flex items-center gap-2">
+            <GameCover gameId={gameId || ''} className="h-8 w-12 flex-shrink-0" />
+            <span className="font-display font-bold text-xs tracking-wider uppercase text-ad-gold">
+              {gameId?.replace(/-/g, ' ')}
+            </span>
+          </div>
 
           {gameId === 'six-questions' && (
             <span className="text-xs font-mono text-ad-text-secondary">
@@ -987,12 +1003,29 @@ export const GamePlayPage: React.FC = () => {
                 transition={{ duration: 2, ease: [0.17, 0.67, 0.12, 0.99] }}
                 className="w-full h-full rounded-full border-4 border-dashed border-ad-gold/60 bg-gradient-to-br from-ad-burgundy via-ad-red/30 to-ad-bg flex items-center justify-center shadow-2xl shadow-ad-red/40"
               >
-                <span className="text-5xl select-none">🎰</span>
+                <img
+                  src={AFTERDARK_ASSETS.ui.rouletteWheel}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full rounded-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               </motion.div>
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-2 text-xl text-ad-gold font-bold">
                 ▼
               </div>
             </div>
+            {gameId === 'fantasy-roulette' && (
+              <img
+                src={AFTERDARK_ASSETS.ui.dice}
+                alt=""
+                aria-hidden="true"
+                className="mx-auto h-12 w-20 rounded-lg object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            )}
 
             {/* Result Display */}
             {wheelResult && (
@@ -1028,6 +1061,25 @@ export const GamePlayPage: React.FC = () => {
         {/* ========================================================= */}
         {gameId === 'choose-your-story' && (
           <div className="space-y-5 text-left">
+            <div className="relative overflow-hidden rounded-xl border border-ad-gold/30">
+              <img
+                src={storyScenes[storyNodeId] || AFTERDARK_ASSETS.scenes.hotelSuite}
+                alt=""
+                aria-hidden="true"
+                className="h-36 w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ad-bg/80 via-transparent to-ad-bg/10" />
+              <img
+                src={AFTERDARK_ASSETS.ui.maskOverlay}
+                alt=""
+                aria-hidden="true"
+                className="absolute bottom-2 right-2 h-10 w-16 rounded-lg object-cover opacity-90"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
             <div className="text-center space-y-1">
               <span className="text-xs font-mono text-ad-gold tracking-widest uppercase">
                 {STORY_TITLE}
