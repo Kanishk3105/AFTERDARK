@@ -1,6 +1,17 @@
 // Application configuration — all branding and settings are centralized here
 // so the product name, tagline, and theme can be changed without rewriting components.
 
+import type { IntensityLevel } from '@/types';
+
+export const DEFAULT_INTENSITY: IntensityLevel = 'moderate';
+
+export const INTENSITY_SCORE: Record<IntensityLevel, number> = {
+  mild: 20,
+  moderate: 55,
+  spicy: 87,
+  extreme: 100,
+};
+
 export const APP_CONFIG = {
   name: 'AFTERDARK',
   tagline: 'Two people. Four moods. Endless discovery.',

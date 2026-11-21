@@ -295,7 +295,7 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const spinRoulette = () => {
     const result = selectNext({
       gameId,
-      intensity: activeSession?.intensity ?? 'spicy',
+      intensity: activeSession?.intensity ?? 'moderate',
       excludedTopics,
       history: cardHistory,
       fingerprints,

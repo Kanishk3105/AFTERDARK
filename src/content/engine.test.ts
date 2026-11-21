@@ -8,8 +8,18 @@ import {
   auditCatalogue,
   totalCatalogueSize,
 } from './engine';
+import { INTENSITY_SCORE } from '@/config/app.config';
 
 describe('No-Repetition Content Engine', () => {
+  it('uses the required shared intensity scale', () => {
+    expect(INTENSITY_SCORE).toEqual({
+      mild: 20,
+      moderate: 55,
+      spicy: 87,
+      extreme: 100,
+    });
+  });
+
   it('computes consistent fingerprints regardless of stop-words and casing', () => {
     const fp1 = fingerprint('What is your secret desire tonight?');
     const fp2 = fingerprint('SECRET DESIRE TONIGHT');
@@ -89,10 +99,37 @@ describe('No-Repetition Content Engine', () => {
       history: [],
       fingerprints: [],
     });
-
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.card.tags).not.toContain('arguments');
+    }
+  });
+
+  it('keeps Truth or Dare selections within the selected intensity ceiling and history', () => {
+    const request = {
+      gameId: 'truth-or-dare',
+      intensity: 'moderate' as const,
+      excludedTopics: [],
+      history: [],
+      fingerprints: [],
+    };
+    const first = selectNext(request);
+
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(['mild', 'moderate']).toContain(first.card.intensity);
+
+    const next = selectNext({
+      ...request,
+      history: [first.card.id],
+      fingerprints: [first.card.similarityFingerprint],
+    });
+
+    expect(next.ok).toBe(true);
+    if (next.ok) {
+      expect(next.card.id).not.toBe(first.card.id);
+      expect(next.card.similarityFingerprint).not.toBe(first.card.similarityFingerprint);
+      expect(['mild', 'moderate']).toContain(next.card.intensity);
     }
   });
 

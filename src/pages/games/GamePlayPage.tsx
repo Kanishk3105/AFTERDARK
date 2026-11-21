@@ -31,7 +31,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useToast } from '@/components/ui/Toast';
-import { ContentCard, IntensityLevel, MoodId } from '@/types';
+import { ContentCard, MoodId } from '@/types';
+import { DEFAULT_INTENSITY } from '@/config/app.config';
 import { DedicatedGamePage } from '@/pages/games/DedicatedGamePage';
 import { GameCover } from '@/components/branding/GameCover';
 import { AFTERDARK_ASSETS } from '@/assets/afterdark';
@@ -57,6 +58,7 @@ export const GamePlayPage: React.FC = () => {
   const excludedTopics = useAppStore((s) => s.preferences.excludedTopics) || [];
 
   const activeSession = useGameStore((s) => s.activeSession);
+  const sessionIntensity = activeSession?.intensity ?? DEFAULT_INTENSITY;
   const cardHistory = useGameStore((s) => s.cardHistory);
   const fingerprints = useGameStore((s) => s.fingerprints);
   const recordCardEncountered = useGameStore((s) => s.recordCardEncountered);
@@ -108,7 +110,7 @@ export const GamePlayPage: React.FC = () => {
     if (!gameId) return;
     const res = selectNext({
       gameId,
-      intensity: (activeSession?.intensity as IntensityLevel) || 'spicy',
+      intensity: sessionIntensity,
       excludedTopics,
       history: cardHistory,
       fingerprints,
@@ -121,6 +123,25 @@ export const GamePlayPage: React.FC = () => {
     } else {
       showToast(res.reason, 'info');
     }
+  };
+
+  const selectTruthOrDareCard = () => {
+    const { cardHistory: currentHistory, fingerprints: currentFingerprints } = useGameStore.getState();
+    const result = selectNext({
+      gameId: 'truth-or-dare',
+      intensity: sessionIntensity,
+      excludedTopics,
+      history: currentHistory,
+      fingerprints: currentFingerprints,
+    });
+    if (!result.ok) {
+      showToast(result.reason, 'warning');
+      return null;
+    }
+
+    recordCardEncountered(result.card.id, result.card.similarityFingerprint, 'truth-or-dare');
+    notePrompt(result.card.id, result.card.similarityFingerprint, 'truth-or-dare');
+    return result.card;
   };
 
   useEffect(() => {
@@ -208,13 +229,19 @@ export const GamePlayPage: React.FC = () => {
       } else {
         const res = selectNext({
           gameId: gameId || 'romantic-roulette',
-          intensity: 'spicy',
+          intensity: sessionIntensity,
           excludedTopics,
           history: cardHistory,
           fingerprints,
         });
-        if (res.ok) setWheelResult(res.card.prompt);
-        else setWheelResult('Share a tender, lingering dance in candlelit silence.');
+        if (res.ok) {
+          setWheelResult(res.card.prompt);
+          recordCardEncountered(res.card.id, res.card.similarityFingerprint, gameId || 'romantic-roulette');
+          notePrompt(res.card.id, res.card.similarityFingerprint, gameId || 'romantic-roulette');
+        } else {
+          setWheelResult('');
+          showToast(res.reason, 'warning');
+        }
       }
       setIsSpinning(false);
     }, 2000);
@@ -324,15 +351,8 @@ export const GamePlayPage: React.FC = () => {
                     variant="secondary"
                     className="py-6 text-lg font-display tracking-widest uppercase border-ad-gold/60"
                     onClick={() => {
-                      const res = selectNext({
-                        gameId: 'truth-or-dare',
-                        intensity: 'spicy',
-                        excludedTopics,
-                        history: cardHistory,
-                        fingerprints,
-                      });
-                      const prompt = res.ok ? res.card.prompt : 'Truth: What is one secret desire you have never voiced out loud?';
-                      setTodState((prev) => chooseKind(prev, 'truth', prompt, res.ok ? res.card.id : undefined));
+                      const card = selectTruthOrDareCard();
+                      if (card) setTodState((prev) => chooseKind(prev, 'truth', card.prompt, card.id));
                     }}
                   >
                     TRUTH 🌹
@@ -343,15 +363,8 @@ export const GamePlayPage: React.FC = () => {
                     variant="primary"
                     className="py-6 text-lg font-display tracking-widest uppercase shadow-xl shadow-ad-red/40"
                     onClick={() => {
-                      const res = selectNext({
-                        gameId: 'truth-or-dare',
-                        intensity: 'spicy',
-                        excludedTopics,
-                        history: cardHistory,
-                        fingerprints,
-                      });
-                      const prompt = res.ok ? res.card.prompt : 'Dare: Spend the next 60 seconds offering your partner slow neck kisses.';
-                      setTodState((prev) => chooseKind(prev, 'dare', prompt, res.ok ? res.card.id : undefined));
+                      const card = selectTruthOrDareCard();
+                      if (card) setTodState((prev) => chooseKind(prev, 'dare', card.prompt, card.id));
                     }}
                   >
                     DARE 🔥
@@ -420,15 +433,9 @@ export const GamePlayPage: React.FC = () => {
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      const res = selectNext({
-                        gameId: 'truth-or-dare',
-                        intensity: 'spicy',
-                        excludedTopics,
-                        history: cardHistory,
-                        fingerprints,
-                      });
-                      const altPrompt = res.ok ? res.card.prompt : 'Alternative: Give a 1-minute sincere compliment.';
-                      setTodState((s) => swapIn(s, altPrompt, res.ok ? res.card.id : undefined));
+                      const card = selectTruthOrDareCard();
+                      if (!card) return;
+                      setTodState((s) => swapIn(s, card.prompt, card.id));
                       showToast('Challenge swapped', 'info');
                     }}
                   >

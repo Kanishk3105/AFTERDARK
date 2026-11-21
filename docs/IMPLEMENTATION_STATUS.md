@@ -20,7 +20,7 @@ reconnection, or synchronized answer privacy.
 | Romantic | Love Language | Dedicated private ranking of the five love languages, unique-rank validation, simultaneous reveal and rank-match scoring are implemented with a tested engine. Remote synchronization and component-level tests remain absent. |
 | Romantic | Couple Challenges | Mutual acceptance, pass-without-penalty, pause/resume and shared completion/results are implemented with a tested engine. It remains local pass-and-play, not remote or server-authoritative. |
 | Romantic | Romantic Roulette | Spins eligible cards from the romantic content pack, applies local no-repeat history and persists the current result. Selection uses the tested shared content engine; no synchronized reveal or two-device history exists. |
-| Sexual | Truth or Dare | Local reducer covers turns, consent actions, strikes, alternatives and five-step state. Page state is not persisted for restart/reconnect; UI coverage is incomplete. |
+| Sexual | Truth or Dare | Local reducer covers turns, consent actions, strikes, alternatives and five-step state. Prompts now use the session intensity and exclusions, are recorded in local no-repeat history when presented, and are not replaced with unfiltered fallback text when the eligible pool is exhausted. Page state is not persisted for restart/reconnect; UI coverage is incomplete. |
 | Sexual | Desire Match | Local private yes/maybe/no choices and reveal. No remote privacy, persistence or game UI test. |
 | Sexual | Naughty Roulette | Spins eligible cards from the sexual content pack, respecting the session intensity and exclusions and recording local no-repeat history. No synchronized two-device reveal exists. |
 | Sexual | Temptations | Four distinct, controlled choices, partner selection, creator approval and penalty-free pass are implemented with tested local state transitions. No remote consent workflow or component-level test exists. |
@@ -50,6 +50,12 @@ semantic language model. This total does not apply an individual couple’s
 intensity or excluded-topic settings. Pair history remains local and is not
 synchronized between devices.
 
+New profiles default to Moderate (55/100). The shared scale is Mild (20),
+Moderate (55), Spicy (87), and Extreme (100). Selection currently treats the
+chosen level as a ceiling, not as a separate exact-level pool; not all games
+offer a per-game intensity picker, and four independently differentiated
+intensity pools for every game remain incomplete.
+
 The no-repeat selector excludes all persisted encountered IDs and compares
 against persisted semantic fingerprints. Unit tests cover old semantic
 duplicates and the full catalogue threshold.
@@ -59,7 +65,7 @@ duplicates and the full catalogue threshold.
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Tested | `npm test`; latest run: 60 tests passed across 9 files. |
+| Unit tests | Tested | `npm test`; latest run: 65 tests passed across 10 files. |
 | Supabase schema and local configuration | New migrations tested in GitHub Actions | Clean local Supabase migration reset and all 41 pgTAP assertions passed; all 12 deterministic Edge Function tests passed in workflow run [#6](https://github.com/Kanishk3105/AFTERDARK/actions/runs/44903437509). Docker remains unavailable locally; live project deployment is not tested. |
 | Supabase remote content | Disabled until E2EE is integrated | The new migration defaults rooms to `e2ee_protocol = 'disabled'`, revokes unused legacy invitations and blocks chat reads/writes, media creation/retrieval, and direct game-session access through server-side policies. Online room invitations no longer contain a room key; legacy v1 links are rejected. Live secure messaging is not available. |
 | Room deletion | Implemented; live Storage/scheduler verification pending | Owner-authenticated deletion immediately revokes both members, invitations, push tokens and notifications. A retryable service-role job removes all room Storage objects before cascading room metadata, chat, games, history, media records and credentials. Deterministic retry tests and pgTAP deletion checks are included; production scheduler execution remains unverified. |

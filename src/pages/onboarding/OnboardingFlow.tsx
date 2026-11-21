@@ -21,6 +21,7 @@ import { CoupleConfig, IntensityLevel } from '@/types';
 import { createRemoteRoom } from '@/services/sync';
 import { registerStoredPushToken } from '@/services/notifications';
 import { AFTERDARK_ASSETS } from '@/assets/afterdark';
+import { DEFAULT_INTENSITY, INTENSITY_SCORE } from '@/config/app.config';
 
 export const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export const OnboardingFlow: React.FC = () => {
   const [nick, setNick] = useState(playerName || '');
   const [partnerNick, setPartnerNick] = useState(partnerName || '');
   const [config, setConfig] = useState<CoupleConfig>(preferences.coupleConfig || 'mf');
-  const [intensity, setIntensity] = useState<IntensityLevel>(preferences.intensity || 'spicy');
+  const [intensity, setIntensity] = useState<IntensityLevel>(preferences.intensity || DEFAULT_INTENSITY);
   const [selectedInterests, setSelectedInterests] = useState<string[]>(
     preferences.interests || ['Romance', 'Deep Questions', 'Challenges']
   );
@@ -317,7 +318,7 @@ export const OnboardingFlow: React.FC = () => {
                     { id: 'mild', label: 'Mild 🌿', desc: 'Gentle & conversational' },
                     { id: 'moderate', label: 'Moderate 🌹', desc: 'Warm & flirtatious' },
                     { id: 'spicy', label: 'Spicy 🔥', desc: 'Bold & sensual' },
-                    { id: 'extreme', label: 'Extreme 😈', desc: 'Unfiltered adventure' },
+                    { id: 'extreme', label: 'Extreme 😈', desc: 'Strongest intensity' },
                   ].map((lvl) => (
                     <button
                       key={lvl.id}
@@ -329,7 +330,9 @@ export const OnboardingFlow: React.FC = () => {
                           : 'border-ad-burgundy/30 bg-ad-bg-secondary/30 text-ad-text-secondary'
                       }`}
                     >
-                      <div className="text-xs font-semibold text-ad-text">{lvl.label}</div>
+                      <div className="text-xs font-semibold text-ad-text">
+                        {lvl.label} · {INTENSITY_SCORE[lvl.id as IntensityLevel]}/100
+                      </div>
                       <div className="text-[10px] text-ad-text-secondary/70">{lvl.desc}</div>
                     </button>
                   ))}

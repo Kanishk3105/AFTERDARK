@@ -4,7 +4,7 @@ import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
 import { useChatStore } from '@/stores/chat.store';
 import { useTrophyStore } from '@/stores/trophy.store';
-import { APP_CONFIG } from '@/config/app.config';
+import { APP_CONFIG, INTENSITY_SCORE } from '@/config/app.config';
 import { deleteRemoteRoom, getSyncStatus, revokeRemotePushToken } from '@/services/sync';
 import { totalCatalogueSize } from '@/content/engine';
 import { Card } from '@/components/ui/Card';
@@ -304,7 +304,7 @@ export const SettingsPage: React.FC = () => {
                     : 'border-ad-burgundy/30 bg-ad-bg-secondary text-ad-text-secondary'
                 }`}
               >
-                {lvl}
+                {lvl} · {INTENSITY_SCORE[lvl]}/100
               </button>
             ))}
           </div>

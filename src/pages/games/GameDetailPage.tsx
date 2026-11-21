@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MOODS } from '@/config/app.config';
+import { DEFAULT_INTENSITY, INTENSITY_SCORE, MOODS } from '@/config/app.config';
 import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +22,7 @@ export const GameDetailPage: React.FC = () => {
 
   const startSession = useGameStore((s) => s.startSession);
 
-  const [intensity, setIntensity] = useState<IntensityLevel>(preferredIntensity || 'spicy');
+  const [intensity, setIntensity] = useState<IntensityLevel>(preferredIntensity || DEFAULT_INTENSITY);
 
   const mood = MOODS.find((m) => m.id === moodId);
   const game = mood?.games.find((g) => g.id === gameId);
@@ -122,7 +122,7 @@ export const GameDetailPage: React.FC = () => {
               Select Intensity
             </label>
             <span className="text-[10px] text-ad-gold capitalize font-mono">
-              {intensity}
+              {intensity} · {INTENSITY_SCORE[intensity]}/100
             </span>
           </div>
 
@@ -152,6 +152,7 @@ export const GameDetailPage: React.FC = () => {
                   decoding="async"
                 />
                 <div className="text-[10px] mt-0.5">{lvl.label}</div>
+                <div className="text-[9px] opacity-70">{INTENSITY_SCORE[lvl.id as IntensityLevel]}/100</div>
               </button>
             ))}
           </div>

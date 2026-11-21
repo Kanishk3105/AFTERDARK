@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEFAULT_INTENSITY } from '@/config/app.config';
 import { MoodId, PlayMode, UserPreferences } from '@/types';
 
 interface AppState {
@@ -38,7 +39,7 @@ const defaultPreferences: UserPreferences = {
   language: 'English',
   pronouns: '',
   coupleConfig: 'mf',
-  intensity: 'spicy',
+  intensity: DEFAULT_INTENSITY,
   interests: ['Romance', 'Deep Questions', 'Challenges'],
   excludedTopics: [],
   showOnlineStatus: true,
