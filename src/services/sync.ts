@@ -132,6 +132,16 @@ export async function registerRemotePushToken(
   if (error) throw error;
 }
 
+export async function revokeRemotePushToken(roomId: string): Promise<void> {
+  const client = getRemoteClient();
+  if (!client || roomId.startsWith('room-')) return;
+  await ensureRemoteIdentity();
+  const { error } = await client.rpc('unregister_device_token', {
+    target_room: roomId,
+  });
+  if (error) throw error;
+}
+
 export async function notifyRemotePartner(
   roomId: string,
   kind: 'invitation' | 'message' | 'game' | 'turn' | 'completion' | 'trophy' | 'presence',

@@ -304,8 +304,25 @@ begin
 end;
 $$;
 
+create or replace function public.unregister_device_token(target_room uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if auth.uid() is null or not public.member_of_room(target_room) then
+    raise exception 'not_a_room_member';
+  end if;
+  delete from public.device_tokens
+  where room_id = target_room and user_id = auth.uid();
+end;
+$$;
+
 revoke all on function public.register_device_token(uuid, text, text) from public, anon;
+revoke all on function public.unregister_device_token(uuid) from public, anon;
 grant execute on function public.register_device_token(uuid, text, text) to authenticated;
+grant execute on function public.unregister_device_token(uuid) to authenticated;
 
 create or replace function public.revoke_room(target_room uuid)
 returns void
@@ -328,6 +345,15 @@ begin
   set status = 'archived',
       revocation_version = revocation_version + 1
   where id = target_room;
+  update public.media_records
+  set consumed_at = coalesce(consumed_at, now()),
+      claim_token = null,
+      claimant_id = null,
+      claim_expires_at = null
+  where room_id = target_room;
+  update public.chat_messages
+  set expires_at = now()
+  where room_id = target_room;
   delete from public.device_tokens where room_id = target_room;
 end;
 $$;

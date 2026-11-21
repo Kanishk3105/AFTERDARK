@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -107,7 +108,7 @@ export const OnboardingFlow: React.FC = () => {
         host: nick,
       });
 
-      const fullLink = inviteLink(token);
+      const fullLink = inviteLink(token, Capacitor.isNativePlatform());
       setGeneratedInviteUrl(fullLink);
     } catch (err) {
       console.error('Room generation error', err);

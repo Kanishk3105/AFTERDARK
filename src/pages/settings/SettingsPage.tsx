@@ -5,7 +5,7 @@ import { useGameStore } from '@/stores/game.store';
 import { useChatStore } from '@/stores/chat.store';
 import { useTrophyStore } from '@/stores/trophy.store';
 import { APP_CONFIG } from '@/config/app.config';
-import { getSyncStatus, revokeRemoteRoom } from '@/services/sync';
+import { getSyncStatus, revokeRemoteRoom, revokeRemotePushToken } from '@/services/sync';
 import { totalCatalogueSize } from '@/content/engine';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast';
 import { IntensityLevel, MoodId } from '@/types';
 import { clearRoomKey } from '@/security/crypto';
 import { saveRemoteNotificationPreferences } from '@/services/sync';
+import { hasEnabledRemoteNotifications, registerStoredPushToken } from '@/services/notifications';
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -71,10 +72,22 @@ export const SettingsPage: React.FC = () => {
 
   const saveNotifications = (next: typeof preferences.notifications) => {
     updatePreferences({ notifications: next });
-    void saveRemoteNotificationPreferences(roomId, {
-      ...next,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    }).catch((error: unknown) => {
+    const updateRemote = async () => {
+      if (hasEnabledRemoteNotifications(next)) {
+        await saveRemoteNotificationPreferences(roomId, {
+          ...next,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        });
+        await registerStoredPushToken();
+      } else {
+        await revokeRemotePushToken(roomId);
+        await saveRemoteNotificationPreferences(roomId, {
+          ...next,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        });
+      }
+    };
+    void updateRemote().catch((error: unknown) => {
       console.error('Saving remote notification preferences failed', error);
       showToast('Notification preferences were saved locally but not synced.', 'warning');
     });

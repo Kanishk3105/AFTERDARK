@@ -42,8 +42,23 @@ export function inviteStatus(payload: InvitePayload, now = Date.now()): 'valid' 
   return now > payload.exp ? 'expired' : 'valid';
 }
 
-export function inviteLink(token: string): string {
-  const url = new URL(window.location.origin + '/join');
+export function inviteLink(
+  token: string,
+  native = false,
+  origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin,
+): string {
+  if (native) return `afterdark://join#${token}`;
+  const url = new URL('/join', origin);
   url.hash = token;
   return url.toString();
+}
+
+export function inviteTokenFromDeepLink(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'afterdark:' || url.hostname !== 'join') return null;
+    return url.hash.slice(1) || null;
+  } catch {
+    return null;
+  }
 }

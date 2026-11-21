@@ -105,6 +105,16 @@ describe('No-Repetition Content Engine', () => {
     const report = auditCatalogue();
     expect(report.generatedExperiences).toBe(totalCatalogueSize());
     expect(report.duplicateIds).toBe(0);
+    expect(report.exactDuplicateExperiences + report.nearDuplicateExperiences)
+      .toBe(report.generatedExperiences - report.validUniqueExperiences);
+    expect(report.nearDuplicateMetric).toBe('normalized-token-set-jaccard');
+    expect(report.nearDuplicateThreshold).toBe(0.82);
+    expect(report.requiredMetadataErrors).toBe(0);
+    expect(report.gameCategorizationErrors).toBe(0);
+    expect(report.uniqueNormalizedPrompts).toBeGreaterThan(0);
+    expect(report.eligibility.privateBuild).toBeGreaterThan(0);
+    expect(report.operationalChecks.noRepeatSelection).toBe('covered-by-selector-tests');
+    expect(report.operationalChecks.pairSpecificHistory).toBe('not-synchronized-between-devices');
     expect(Object.keys(report.games)).toHaveLength(21);
     expect(report.validUniqueExperiences).toBeGreaterThanOrEqual(10_000);
     Object.values(report.games).forEach((game) => {

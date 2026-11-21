@@ -23,4 +23,8 @@ describe('Media expiry', () => {
   it('marks elapsed media expired', () => {
     expect(isExpired(new Date(5_000).toISOString(), 5_000)).toBe(true);
   });
+
+  it('fails closed for malformed expiry metadata', () => {
+    expect(isExpired('not-a-timestamp', 1_000)).toBe(true);
+  });
 });

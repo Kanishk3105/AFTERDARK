@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { removeStorageObjectIfPresent } from '../_shared/media-storage.ts';
 
 const corsHeaders = {
   'access-control-allow-origin': '*',
@@ -67,11 +68,21 @@ Deno.serve(async (request) => {
       return new Response('Media temporarily unavailable', { status: 503, headers: corsHeaders });
     }
     if (claimed[0].expiry_policy === 'view-once') {
-      const { error: removeError } = await serviceClient.storage
-        .from('afterdark-private-media')
-        .remove([claimed[0].storage_path]);
-      if (removeError) console.error('View-once object cleanup will retry', removeError.message);
-      else {
+      let objectRemoved = false;
+      try {
+        await removeStorageObjectIfPresent(
+          serviceClient,
+          'afterdark-private-media',
+          claimed[0].storage_path,
+        );
+        objectRemoved = true;
+      } catch (error) {
+        console.error(
+          'View-once object cleanup will retry',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+      if (objectRemoved) {
         const { error: rowError } = await serviceClient.from('media_records').delete().eq('id', mediaId);
         if (rowError) console.error('View-once metadata cleanup will retry', rowError.message);
       }

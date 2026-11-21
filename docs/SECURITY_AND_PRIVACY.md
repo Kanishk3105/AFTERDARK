@@ -20,9 +20,13 @@
 - A cleanup Edge Function retries deletion of expired/consumed Storage objects
   and metadata. It must be scheduled by deployment configuration.
 - Room revocation archives the room, revokes active membership/invitations,
-  increments the revocation version and deletes registered push tokens.
+  increments the revocation version, expires chat rows, queues media for
+  server cleanup and deletes registered push tokens.
 - Push messages contain generic text only; notification preferences and quiet
-  hours are evaluated server-side.
+  hours are evaluated server-side. Individual token registration can be
+  revoked; FCM `UNREGISTERED` responses also trigger stale-token cleanup.
+- Android app-data backup is disabled to avoid exporting private local state
+  outside the app's protected storage.
 
 ## Important cryptographic boundary
 

@@ -86,7 +86,7 @@ export const ChatPage: React.FC = () => {
     const checkExpiry = () => {
       messages.forEach((message) => {
         if (message.deleted) return;
-        if (isExpired(message.expiresAt, Date.now(), message.viewed)) {
+        if (isExpired(message.expiresAt, Date.now())) {
           void expireMessage(message.id);
         }
       });
@@ -570,7 +570,7 @@ export const ChatPage: React.FC = () => {
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {
-                        if (msg.deleted || isExpired(msg.expiresAt, Date.now(), msg.viewed)) {
+                        if (msg.deleted || isExpired(msg.expiresAt, Date.now())) {
                           showToast('This media has expired.', 'info');
                           return;
                         }

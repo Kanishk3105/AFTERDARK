@@ -5,6 +5,8 @@ const corsHeaders = {
   'access-control-allow-headers': 'authorization, apikey, content-type, x-media-id, x-room-id, x-expiry-policy, x-content-type',
   'access-control-allow-methods': 'POST, OPTIONS',
 };
+const maxEncryptedMediaBytes = 50 * 1024 * 1024;
+const mediaMagic = [0x41, 0x44, 0x31, 0x00];
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -17,6 +19,16 @@ Deno.serve(async (request) => {
   const contentType = request.headers.get('x-content-type');
   if (!authorization || !mediaId || !roomId || !expiry || !contentType) {
     return new Response('Required upload metadata is missing', { status: 400, headers: corsHeaders });
+  }
+  const declaredLength = request.headers.get('content-length');
+  if (declaredLength !== null) {
+    const length = Number(declaredLength);
+    if (!Number.isSafeInteger(length) || length < 0) {
+      return new Response('Invalid media length', { status: 400, headers: corsHeaders });
+    }
+    if (length > maxEncryptedMediaBytes) {
+      return new Response('Media exceeds the 50 MiB limit', { status: 413, headers: corsHeaders });
+    }
   }
 
   const url = Deno.env.get('SUPABASE_URL');
@@ -32,6 +44,18 @@ Deno.serve(async (request) => {
     return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   }
 
+  const encryptedMedia = await request.arrayBuffer();
+  const bytes = new Uint8Array(encryptedMedia);
+  if (bytes.length > maxEncryptedMediaBytes) {
+    return new Response('Media exceeds the 50 MiB limit', { status: 413, headers: corsHeaders });
+  }
+  if (bytes.length < 32) {
+    return new Response('Encrypted media is incomplete', { status: 400, headers: corsHeaders });
+  }
+  if (!mediaMagic.every((byte, index) => bytes[index] === byte)) {
+    return new Response('Media must use the AFTERDARK encrypted container', { status: 400, headers: corsHeaders });
+  }
+
   const { data: path, error: recordError } = await userClient.rpc('create_media_record', {
     target_media: mediaId,
     target_room: roomId,
@@ -43,10 +67,9 @@ Deno.serve(async (request) => {
   }
 
   const serviceClient = createClient(url, serviceKey);
-  const encryptedMedia = await request.blob();
   const { error: uploadError } = await serviceClient.storage
     .from('afterdark-private-media')
-    .upload(path, encryptedMedia, {
+    .upload(path, new Blob([encryptedMedia], { type: 'application/octet-stream' }), {
       contentType: 'application/octet-stream',
       upsert: true,
     });

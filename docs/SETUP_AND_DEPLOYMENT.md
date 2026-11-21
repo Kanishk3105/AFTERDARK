@@ -7,7 +7,7 @@ npm install
 npm run dev
 npm test
 npm run build
-node .\scripts\report-content-catalogue.mjs
+npm run content:audit
 ```
 
 `.env.example` contains only the public frontend Supabase URL and anon key.
@@ -21,6 +21,7 @@ Docker Desktop is required. From the repository root:
 npx supabase start
 npx supabase db reset --local
 npx supabase test db --local
+npx -y deno test --lock .\deno.lock .\supabase\functions\_shared\media-cleanup.test.ts
 Copy-Item .\supabase\functions\.env.example .\supabase\functions\.env.local
 # Fill local-only values in supabase/functions/.env.local.
 npx supabase functions serve --env-file .\supabase\functions\.env.local
@@ -36,9 +37,10 @@ MEDIA_CLEANUP_SECRET=<random local secret>
 FCM_SERVICE_ACCOUNT_JSON=<one-line Firebase service-account JSON; optional locally>
 ```
 
-The environment in this development session did not have Docker Desktop
-running, so local migrations/pgTAP and Edge Function execution were not
-validated here.
+The cleanup retry tests use a deterministic in-memory adapter and do not need
+FCM credentials. Docker-backed SQL/pgTAP, local Storage API and Edge Function
+integration still require Docker Desktop and were not validated in this
+development session.
 
 ## Hosted Supabase activation
 
@@ -131,7 +133,42 @@ No physical device or emulator was attached during this pass.
 
 ## Release signing
 
-No signing key is stored in this repository. The owner must create and securely
-back up the production signing key, then configure it through local Gradle
-properties or a CI secret store. Never commit it or use a temporary debug key
-for public release.
+No signing key is stored in this repository. Release signing is enabled only
+when all four environment variables are present:
+
+- `AFTERDARK_RELEASE_STORE_FILE`
+- `AFTERDARK_RELEASE_STORE_PASSWORD`
+- `AFTERDARK_RELEASE_KEY_ALIAS`
+- `AFTERDARK_RELEASE_KEY_PASSWORD`
+
+Create an upload keystore outside the repository. `keytool` prompts for
+passwords rather than placing them in shell history:
+
+```powershell
+keytool -genkeypair -v `
+  -keystore C:\secure\afterdark-upload.jks `
+  -alias afterdark-upload `
+  -keyalg RSA -keysize 4096 -validity 10000
+keytool -list -v -keystore C:\secure\afterdark-upload.jks -alias afterdark-upload
+```
+
+Keep at least two secure backups of the keystore and retain the credentials in
+a password manager. Losing the signing key can prevent updates to an already
+distributed Android application.
+
+Set them in a protected CI secret store or a short-lived local PowerShell
+session, then build from `android`:
+
+```powershell
+$env:AFTERDARK_RELEASE_STORE_FILE = 'C:\secure\afterdark-release.jks'
+$env:AFTERDARK_RELEASE_STORE_PASSWORD = '<from-your-secret-store>'
+$env:AFTERDARK_RELEASE_KEY_ALIAS = '<alias-from-your-keystore>'
+$env:AFTERDARK_RELEASE_KEY_PASSWORD = '<from-your-secret-store>'
+.\gradlew.bat bundleRelease
+```
+
+The Gradle build rejects a partial set of signing variables. Never commit the
+keystore or passwords. Update `versionCode` and `versionName` in
+`android/app/build.gradle` for each release. The current values are `1` and
+`0.1.0`. Review [the release checklist](./RELEASE_CHECKLIST.md) before
+distribution.

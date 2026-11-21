@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { cleanupMediaCandidates } from '../_shared/media-cleanup.ts';
+import { removeStorageObjectIfPresent } from '../_shared/media-storage.ts';
 
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -20,25 +22,21 @@ Deno.serve(async (request) => {
     return new Response('Cleanup query failed', { status: 500 });
   }
 
-  let removed = 0;
-  let failed = 0;
-  for (const record of expired ?? []) {
-    const { error: storageError } = await client.storage
-      .from('afterdark-private-media')
-      .remove([record.storage_path]);
-    if (storageError) {
-      failed += 1;
-      console.error('Media object removal will retry', record.id, storageError.message);
-      continue;
-    }
-    const { error: rowError } = await client.from('media_records').delete().eq('id', record.id);
-    if (rowError) {
-      failed += 1;
-      console.error('Media record removal will retry', record.id, rowError.message);
-      continue;
-    }
-    removed += 1;
+  const result = await cleanupMediaCandidates(
+    expired ?? [],
+    (path) => removeStorageObjectIfPresent(client, 'afterdark-private-media', path),
+    async (id) => {
+      const { error } = await client.from('media_records').delete().eq('id', id);
+      if (error) throw error;
+    },
+  );
+  for (const failure of result.failures) {
+    console.error(`Media ${failure.stage} removal will retry`, failure.id, failure.message);
   }
 
-  return Response.json({ removed, failed, scanned: expired?.length ?? 0 });
+  return Response.json({
+    removed: result.removed,
+    failed: result.failures.length,
+    scanned: result.scanned,
+  });
 });

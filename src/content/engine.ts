@@ -16,6 +16,7 @@ const INTENSITY_RANK: Record<IntensityLevel, number> = {
   spicy: 2,
   extreme: 3,
 };
+const NEAR_DUPLICATE_THRESHOLD = 0.82;
 
 const STOP = new Set([
   'the', 'a', 'an', 'to', 'of', 'and', 'or', 'your', 'you', 'with', 'for', 'in', 'on', 'is', 'are',
@@ -86,20 +87,57 @@ export interface CatalogueAudit {
   generatedExperiences: number;
   validUniqueExperiences: number;
   duplicateIds: number;
-  semanticDuplicates: number;
+  exactDuplicateExperiences: number;
+  nearDuplicateExperiences: number;
+  nearDuplicateMetric: 'normalized-token-set-jaccard';
+  nearDuplicateThreshold: number;
+  uniqueNormalizedPrompts: number;
+  duplicateNormalizedPrompts: number;
+  requiredMetadataErrors: number;
+  gameCategorizationErrors: number;
+  eligibility: {
+    privateBuild: number;
+    publicStore: number;
+    privateBuildOnly: number;
+  };
+  examples: {
+    duplicateIds: Array<{ id: string; gameId: string }>;
+    duplicatePrompts: Array<{ id: string; gameId: string; prompt: string }>;
+    nearDuplicates: Array<{ id: string; similarTo: string; similarity: number }>;
+  };
+  operationalChecks: {
+    noRepeatSelection: 'covered-by-selector-tests';
+    pairSpecificHistory: 'not-synchronized-between-devices';
+  };
   games: Record<string, { generated: number; validUnique: number }>;
 }
 
 export function auditCatalogue(): CatalogueAudit {
   const seenIds = new Set<string>();
   const seenExact = new Set<string>();
+  const seenPrompts = new Set<string>();
   const fingerprints: string[] = [];
+  const fingerprintIds: string[] = [];
   const tokenIndex = new Map<string, number[]>();
   const games: CatalogueAudit['games'] = {};
+  const examples: CatalogueAudit['examples'] = {
+    duplicateIds: [],
+    duplicatePrompts: [],
+    nearDuplicates: [],
+  };
+  const eligibility: CatalogueAudit['eligibility'] = {
+    privateBuild: 0,
+    publicStore: 0,
+    privateBuildOnly: 0,
+  };
   let generatedExperiences = 0;
   let duplicateIds = 0;
-  let semanticDuplicates = 0;
+  let exactDuplicateExperiences = 0;
+  let nearDuplicateExperiences = 0;
   let validUniqueExperiences = 0;
+  let duplicateNormalizedPrompts = 0;
+  let requiredMetadataErrors = 0;
+  let gameCategorizationErrors = 0;
 
   Object.values(RECIPES).forEach((recipe) => {
     let gameValidUnique = 0;
@@ -107,16 +145,59 @@ export function auditCatalogue(): CatalogueAudit {
       generatedExperiences += 1;
       if (seenIds.has(card.id)) {
         duplicateIds += 1;
+        if (examples.duplicateIds.length < 20) {
+          examples.duplicateIds.push({ id: card.id, gameId: card.gameId });
+        }
         return;
       }
       seenIds.add(card.id);
-      if (!card.prompt.trim() || card.eligibility.privateBuild === false) return;
+      if (card.eligibility?.privateBuild) eligibility.privateBuild += 1;
+      if (card.eligibility?.publicStore) eligibility.publicStore += 1;
+      if (card.eligibility?.privateBuild && !card.eligibility.publicStore) {
+        eligibility.privateBuildOnly += 1;
+      }
+
+      const metadataValid = Boolean(
+        typeof card.id === 'string' && card.id.trim()
+        && typeof card.prompt === 'string' && card.prompt.trim()
+        && typeof card.theme === 'string' && card.theme.trim()
+        && typeof card.language === 'string' && card.language.trim()
+        && typeof card.contentVersion === 'string' && card.contentVersion.trim()
+        && typeof card.similarityFingerprint === 'string' && card.similarityFingerprint.trim()
+        && Array.isArray(card.tags) && card.tags.length > 0
+        && typeof card.eligibility?.privateBuild === 'boolean'
+        && typeof card.eligibility?.publicStore === 'boolean'
+        && INTENSITY_RANK[card.intensity] !== undefined,
+      );
+      if (!metadataValid) {
+        requiredMetadataErrors += 1;
+        return;
+      }
+      if (card.gameId !== recipe.gameId || card.category !== recipe.mood || card.mood !== recipe.mood) {
+        gameCategorizationErrors += 1;
+        return;
+      }
+      if (!card.eligibility.privateBuild) return;
+
+      const normalizedPrompt = fingerprint(card.prompt);
+      if (seenPrompts.has(normalizedPrompt)) {
+        duplicateNormalizedPrompts += 1;
+        if (examples.duplicatePrompts.length < 20) {
+          examples.duplicatePrompts.push({
+            id: card.id,
+            gameId: card.gameId,
+            prompt: card.prompt,
+          });
+        }
+      } else {
+        seenPrompts.add(normalizedPrompt);
+      }
 
       const exact = `${card.prompt.trim().toLowerCase()}|${(card.answerChoices ?? [])
         .map((choice) => choice.trim().toLowerCase())
         .join('|')}`;
       if (seenExact.has(exact)) {
-        semanticDuplicates += 1;
+        exactDuplicateExperiences += 1;
         return;
       }
       seenExact.add(exact);
@@ -128,21 +209,29 @@ export function auditCatalogue(): CatalogueAudit {
         .sort((left, right) => left.length - right.length);
       const candidates = postings[0] ?? [];
       const currentTerms = new Set(terms);
-      const isSimilar = candidates.some((index) => {
+      const similarIndex = candidates.find((index) => {
         const existing = new Set(fingerprints[index].split(' ').filter(Boolean));
         const maximum = Math.max(existing.size, currentTerms.size);
         const minimum = Math.min(existing.size, currentTerms.size);
-        if (maximum === 0 || minimum / maximum < 0.82) return false;
+        if (maximum === 0 || minimum / maximum < NEAR_DUPLICATE_THRESHOLD) return false;
         const intersection = Array.from(existing).filter((term) => currentTerms.has(term)).length;
-        return intersection / (existing.size + currentTerms.size - intersection) >= 0.82;
+        return intersection / (existing.size + currentTerms.size - intersection) >= NEAR_DUPLICATE_THRESHOLD;
       });
-      if (isSimilar) {
-        semanticDuplicates += 1;
+      if (similarIndex !== undefined) {
+        nearDuplicateExperiences += 1;
+        if (examples.nearDuplicates.length < 20) {
+          examples.nearDuplicates.push({
+            id: card.id,
+            similarTo: fingerprintIds[similarIndex],
+            similarity: Number(jaccard(fingerprints[similarIndex], card.similarityFingerprint).toFixed(4)),
+          });
+        }
         return;
       }
 
       const index = fingerprints.length;
       fingerprints.push(card.similarityFingerprint);
+      fingerprintIds.push(card.id);
       terms.forEach((term) => {
         const entries = tokenIndex.get(term);
         if (entries) entries.push(index);
@@ -168,7 +257,20 @@ export function auditCatalogue(): CatalogueAudit {
     generatedExperiences,
     validUniqueExperiences,
     duplicateIds,
-    semanticDuplicates,
+    exactDuplicateExperiences,
+    nearDuplicateExperiences,
+    nearDuplicateMetric: 'normalized-token-set-jaccard',
+    nearDuplicateThreshold: NEAR_DUPLICATE_THRESHOLD,
+    uniqueNormalizedPrompts: seenPrompts.size,
+    duplicateNormalizedPrompts,
+    requiredMetadataErrors,
+    gameCategorizationErrors,
+    eligibility,
+    examples,
+    operationalChecks: {
+      noRepeatSelection: 'covered-by-selector-tests',
+      pairSpecificHistory: 'not-synchronized-between-devices',
+    },
     games,
   };
 }
@@ -338,7 +440,7 @@ function createSimilarityMatcher(fingerprints: string[]): (candidate: string) =>
       const existing = tokenSets[index];
       const maximum = Math.max(existing.size, candidateTerms.size);
       const minimum = Math.min(existing.size, candidateTerms.size);
-      if (maximum === 0 || minimum / maximum < 0.82) return false;
+      if (maximum === 0 || minimum / maximum < NEAR_DUPLICATE_THRESHOLD) return false;
       const [smaller, larger] = existing.size <= candidateTerms.size
         ? [existing, candidateTerms]
         : [candidateTerms, existing];
@@ -346,7 +448,7 @@ function createSimilarityMatcher(fingerprints: string[]): (candidate: string) =>
       smaller.forEach((term) => {
         if (larger.has(term)) intersection += 1;
       });
-      return intersection / (existing.size + candidateTerms.size - intersection) >= 0.82;
+      return intersection / (existing.size + candidateTerms.size - intersection) >= NEAR_DUPLICATE_THRESHOLD;
     });
   };
 }

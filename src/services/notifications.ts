@@ -27,6 +27,27 @@ export interface NotificationPreferenceSnapshot {
 let pushListenerReady: Promise<void> | null = null;
 let latestPushToken: string | null = null;
 
+export interface LocalNotificationRequest {
+  id: number;
+  title: string;
+  body: string;
+  schedule: { at: Date };
+}
+
+export async function scheduleLocalNotification(
+  schedule: (notification: LocalNotificationRequest) => Promise<void>,
+  title: string,
+  body: string,
+  id = Date.now(),
+): Promise<void> {
+  await schedule({
+    id,
+    title,
+    body,
+    schedule: { at: new Date(Date.now() + 100) },
+  });
+}
+
 export function notificationEnabled(
   kind: NotificationKind,
   preferences: NotificationPreferenceSnapshot,
@@ -60,7 +81,12 @@ export async function initializeNotifications(): Promise<{
   token?: string;
 }> {
   if (!Capacitor.isNativePlatform()) {
-    return { localReady: 'Notification' in window, pushReady: false };
+    return {
+      localReady: typeof window !== 'undefined'
+        && 'Notification' in window
+        && Notification.permission === 'granted',
+      pushReady: false,
+    };
   }
 
   let pushReady = false;
@@ -115,15 +141,32 @@ export async function registerStoredPushToken(): Promise<void> {
   await registerRemotePushToken(roomId, latestPushToken);
 }
 
+export function hasEnabledRemoteNotifications(preferences: NotificationPreferenceSnapshot): boolean {
+  return preferences.messages
+    || preferences.gameInvites
+    || preferences.partnerActivity
+    || preferences.trophies;
+}
+
 export async function showLocalNotification(
   title: string,
   body: string,
   id = Date.now(),
 ): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
-  await LocalNotifications.schedule({
-    notifications: [{ id, title, body, schedule: { at: new Date(Date.now() + 100) } }],
-  });
+  if (!Capacitor.isNativePlatform()) {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission === 'default') await Notification.requestPermission();
+    if (Notification.permission === 'granted') new Notification(title, { body });
+    return;
+  }
+  await scheduleLocalNotification(
+    async (notification) => {
+      await LocalNotifications.schedule({ notifications: [notification] });
+    },
+    title,
+    body,
+    id,
+  );
 }
 
 function clockMinutes(value: string): number {

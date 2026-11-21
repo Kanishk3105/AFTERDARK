@@ -194,7 +194,26 @@ Deno.serve(async (request) => {
       },
     );
     if (response.ok) sent += 1;
-    else console.error('FCM delivery failed', response.status, await response.text());
+    else {
+      const body = await response.text();
+      let unregistered = false;
+      try {
+        const failure = JSON.parse(body);
+        unregistered = failure?.error?.details?.some(
+          (detail: { errorCode?: string }) => detail.errorCode === 'UNREGISTERED',
+        ) ?? false;
+      } catch {
+        unregistered = false;
+      }
+      if (unregistered) {
+        const { error } = await admin.from('device_tokens').delete()
+          .eq('room_id', roomId)
+          .eq('user_id', device.user_id)
+          .eq('token', device.token);
+        if (error) console.error('Stale FCM token removal failed', error.message);
+      }
+      console.error('FCM delivery failed', response.status, body);
+    }
   }
 
   return jsonResponse({ sent, attempted: devices.length });

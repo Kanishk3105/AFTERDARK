@@ -1,5 +1,17 @@
 apply plugin: 'com.android.application'
 
+def releaseSigning = [
+    storeFile: System.getenv('AFTERDARK_RELEASE_STORE_FILE'),
+    storePassword: System.getenv('AFTERDARK_RELEASE_STORE_PASSWORD'),
+    keyAlias: System.getenv('AFTERDARK_RELEASE_KEY_ALIAS'),
+    keyPassword: System.getenv('AFTERDARK_RELEASE_KEY_PASSWORD')
+]
+def hasReleaseSigning = releaseSigning.values().any { it }
+def hasCompleteReleaseSigning = releaseSigning.values().every { it }
+if (hasReleaseSigning && !hasCompleteReleaseSigning) {
+    throw new GradleException('All AFTERDARK_RELEASE_* signing environment variables must be set together.')
+}
+
 android {
     namespace = "com.afterdark.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +28,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (hasCompleteReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile file(releaseSigning.storeFile)
+                storePassword releaseSigning.storePassword
+                keyAlias releaseSigning.keyAlias
+                keyPassword releaseSigning.keyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasCompleteReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
@@ -44,11 +69,9 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+def servicesJSON = file('google-services.json')
+if (servicesJSON.exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.info('google-services.json not found; FCM will not be configured.')
 }

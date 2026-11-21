@@ -57,6 +57,12 @@ have passed. Install the latest debug build at
 
 - [ ] Pair two separate phones using a single-use invitation. Attempt a third
   device and verify server rejection.
+- [ ] With the app installed, open an `afterdark://join#<invite-token>` link
+  while the app is closed and while it is already open; both should route to
+  invitation acceptance. Verify malformed and expired links are rejected.
+- [ ] Open a hosted `https://<site>/join#<invite-token>` link on a device
+  without the app and confirm it reaches the web join page. Never test using a
+  sender-local `localhost` URL.
 - [ ] Exchange text and encrypted media in both directions. Check ordering,
   delivery, duplicate suppression, reconnect and offline behavior.
 - [ ] Test all game state, private answer/reveal, turn, score, pause/resume and

@@ -5,6 +5,8 @@ import {
   encodeInvite,
   decodeInvite,
   inviteStatus,
+  inviteLink,
+  inviteTokenFromDeepLink,
   InvitePayload,
 } from './pairing';
 
@@ -65,5 +67,18 @@ describe('Pairing & Invitations Service', () => {
 
   it('rejects malformed invitation tokens', () => {
     expect(() => decodeInvite('not-an-invite')).toThrow();
+  });
+
+  it('creates links that resolve on web and through the Android custom scheme', () => {
+    expect(inviteLink('opaque-token', false, 'https://afterdark.example'))
+      .toBe('https://afterdark.example/join#opaque-token');
+    expect(inviteLink('opaque-token', true, 'http://localhost'))
+      .toBe('afterdark://join#opaque-token');
+  });
+
+  it('extracts invite tokens only from the registered Android deep-link route', () => {
+    expect(inviteTokenFromDeepLink('afterdark://join#opaque-token')).toBe('opaque-token');
+    expect(inviteTokenFromDeepLink('https://afterdark.example/join#opaque-token')).toBeNull();
+    expect(inviteTokenFromDeepLink('not a url')).toBeNull();
   });
 });

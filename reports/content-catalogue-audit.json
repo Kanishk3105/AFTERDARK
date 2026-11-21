@@ -1,0 +1,315 @@
+{
+  "generatedExperiences": 19074,
+  "validUniqueExperiences": 11075,
+  "duplicateIds": 0,
+  "exactDuplicateExperiences": 0,
+  "nearDuplicateExperiences": 7999,
+  "nearDuplicateMetric": "normalized-token-set-jaccard",
+  "nearDuplicateThreshold": 0.82,
+  "uniqueNormalizedPrompts": 18955,
+  "duplicateNormalizedPrompts": 119,
+  "requiredMetadataErrors": 0,
+  "gameCategorizationErrors": 0,
+  "eligibility": {
+    "privateBuild": 19074,
+    "publicStore": 18799,
+    "privateBuildOnly": 275
+  },
+  "examples": {
+    "duplicateIds": [],
+    "duplicatePrompts": [
+      {
+        "id": "wyr:0:2",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:3",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:4",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:5",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:6",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:7",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:8",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:9",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:10",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:11",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:12",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:13",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:14",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:0:15",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:1:2",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:1:3",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:1:4",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:1:5",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:1:6",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      },
+      {
+        "id": "wyr:1:7",
+        "gameId": "would-you-rather",
+        "prompt": "Would you rather…"
+      }
+    ],
+    "nearDuplicates": [
+      {
+        "id": "six-questions:0:1:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:1:1:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8261
+      },
+      {
+        "id": "six-questions:5:1:0",
+        "similarTo": "six-questions:5:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:0:2:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8696
+      },
+      {
+        "id": "six-questions:1:2:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8636
+      },
+      {
+        "id": "six-questions:5:2:0",
+        "similarTo": "six-questions:5:0:0",
+        "similarity": 0.8696
+      },
+      {
+        "id": "six-questions:0:3:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:1:3:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8261
+      },
+      {
+        "id": "six-questions:5:3:0",
+        "similarTo": "six-questions:5:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:0:4:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:1:4:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8261
+      },
+      {
+        "id": "six-questions:5:4:0",
+        "similarTo": "six-questions:5:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:0:5:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:1:5:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8261
+      },
+      {
+        "id": "six-questions:5:5:0",
+        "similarTo": "six-questions:5:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:0:6:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:1:6:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8261
+      },
+      {
+        "id": "six-questions:5:6:0",
+        "similarTo": "six-questions:5:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:0:7:0",
+        "similarTo": "six-questions:0:0:0",
+        "similarity": 0.8333
+      },
+      {
+        "id": "six-questions:1:7:0",
+        "similarTo": "six-questions:1:0:0",
+        "similarity": 0.8261
+      }
+    ]
+  },
+  "operationalChecks": {
+    "noRepeatSelection": "covered-by-selector-tests",
+    "pairSpecificHistory": "not-synchronized-between-devices"
+  },
+  "games": {
+    "six-questions": {
+      "generated": 962,
+      "validUnique": 329
+    },
+    "how-well-do-you-know-me": {
+      "generated": 481,
+      "validUnique": 93
+    },
+    "would-you-rather": {
+      "generated": 120,
+      "validUnique": 120
+    },
+    "whos-more-likely": {
+      "generated": 12,
+      "validUnique": 12
+    },
+    "love-quiz": {
+      "generated": 481,
+      "validUnique": 275
+    },
+    "memory-lane": {
+      "generated": 21,
+      "validUnique": 21
+    },
+    "couple-challenges": {
+      "generated": 8,
+      "validUnique": 8
+    },
+    "romantic-roulette": {
+      "generated": 8,
+      "validUnique": 8
+    },
+    "truth-or-dare": {
+      "generated": 122,
+      "validUnique": 122
+    },
+    "desire-match": {
+      "generated": 20,
+      "validUnique": 20
+    },
+    "naughty-roulette": {
+      "generated": 20,
+      "validUnique": 19
+    },
+    "temptations": {
+      "generated": 20,
+      "validUnique": 18
+    },
+    "desire-quiz": {
+      "generated": 81,
+      "validUnique": 23
+    },
+    "emoji-confessions": {
+      "generated": 12,
+      "validUnique": 9
+    },
+    "fantasy-cards": {
+      "generated": 24,
+      "validUnique": 8
+    },
+    "scenario-builder": {
+      "generated": 12,
+      "validUnique": 12
+    },
+    "the-menu": {
+      "generated": 12,
+      "validUnique": 12
+    },
+    "challenge-duel": {
+      "generated": 12,
+      "validUnique": 12
+    },
+    "choose-your-story": {
+      "generated": 1,
+      "validUnique": 1
+    },
+    "fantasy-roulette": {
+      "generated": 16640,
+      "validUnique": 9948
+    },
+    "love-language": {
+      "generated": 5,
+      "validUnique": 5
+    }
+  }
+}

@@ -35,12 +35,18 @@ reconnection, or synchronized answer privacy.
 
 ## Content measurement
 
-Run `node .\scripts\report-content-catalogue.mjs` to regenerate the catalogue
-audit. At this revision it reports 19,074 generated combinations and 11,075
-valid unique private-build experiences, with zero duplicate IDs and 7,999
-exact/semantic duplicates excluded. Semantic comparisons use normalized
-prompt/choice fingerprints and Jaccard similarity >= 0.82. This total does not
-apply an individual couple’s intensity or excluded-topic settings.
+Run `npm run content:audit` to regenerate the
+machine-readable `reports/content-catalogue-audit.json` report and print it to
+stdout. The audit measures generated/unique experiences, duplicate IDs,
+normalized prompts, near-duplicate examples, required metadata, game
+categorization and public/private eligibility. At this revision it reports
+19,074 generated combinations and 11,075 valid unique private-build
+experiences, with zero duplicate IDs and 7,999 exact/near-duplicate candidates
+excluded. Near-duplicate comparisons use normalized prompt/choice token sets
+and Jaccard similarity >= 0.82; this is a lexical heuristic, not a semantic
+language model. This total does not apply an individual couple’s
+intensity or excluded-topic settings. Pair history remains local and is not
+synchronized between devices.
 
 The no-repeat selector excludes all persisted encountered IDs and compares
 against persisted semantic fingerprints. Unit tests cover old semantic
@@ -51,14 +57,15 @@ duplicates and the full catalogue threshold.
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Tested | `npm test`; latest run: 43 tests passed across 9 files. |
-| Supabase schema and local configuration | Implemented, not locally executed | Versioned migrations, RLS, Edge Functions, local `config.toml` and pgTAP media/room tests exist. Local `supabase db reset` could not run because Docker Desktop is unavailable. |
-| Supabase remote chat | Implemented but externally unverified | Authenticated room RPCs, message subscription and encrypted media upload/view endpoints are wired. Live two-phone relay, offline retry and full game-state sync are not tested; Anywhere mode remains disabled. |
+| Unit tests | Tested | `npm test`; latest run: 48 tests passed across 9 files. |
+| Supabase schema and local configuration | Implemented, not fully locally executed | Versioned migrations, RLS, Edge Functions, local `config.toml` and pgTAP media/room tests exist. In-memory cleanup retry/idempotency tests pass; SQL/pgTAP and Storage API integration could not run because Docker Desktop is unavailable. |
+| Supabase remote chat | Implemented but externally unverified | Authenticated room RPCs, message subscription and encrypted media upload/view endpoints are wired. Live two-phone relay and offline retry are unverified. Full game-state sync is not implemented; Anywhere mode remains disabled. |
 | Photo/video/gallery/voice | Implemented but device-unverified | Native plugins compile; capture/gallery/voice now show preview before explicit send. Media bytes are sealed locally and for remote upload. No physical device or emulator is attached. |
-| Disappearing media | Server implementation added; backend tests not executed | SQL enforces membership, first-view expiry and atomic view-once claim. Edge Functions stream authorized media and retry cleanup. Cleanup needs a scheduled invocation; interrupted view-once downloads can be consumed. |
-| FCM notifications | Pipeline implemented; externally unverified | Native registration listener, room token registration, server preference/quiet-hours check and generic FCM HTTP v1 dispatch are wired. Firebase project and service account are absent. |
+| Disappearing media | Server implementation added; partially tested | SQL enforces membership, first-view expiry and atomic view-once claim. Room revocation queues media for cleanup. Edge cleanup checks storage existence, is idempotent, logs failures and retries; in-memory retry tests pass. Docker-backed SQL/Storage integration remains unverified. Cleanup needs a scheduled invocation; interrupted view-once downloads can be consumed. |
+| FCM notifications | Partially implemented; externally unverified | Native registration/token refresh, token revocation, preference/quiet-hours checks and generic FCM HTTP v1 dispatch are wired. Only chat messages currently invoke server dispatch; game, invitation, turn, trophy and presence event producers are not wired. Local scheduling has an injectable test adapter; actual OS delivery remains device-unverified. Firebase project and service account are absent. |
 | End-to-end encryption | Incomplete; do not market as E2EE | Android local key storage and AES-GCM message/media encryption exist. The invite still transports a shared raw room key; authenticated protocol handshake, ratchet, replay protection, device revocation/key rotation and independent-device crypto tests remain missing. |
-| Android debug build | Tested | Fresh `npm run android:assemble` passed using JDK 21. APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. No device launch test. |
+| Android debug build | Tested | Fresh `npm run android:assemble` passed using JDK 21. APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Android custom-scheme invite handling is wired but not device-tested. |
+| Android release configuration | Tested without release credentials | Unsigned `bundleRelease` task passed. Signing is conditional on the four `AFTERDARK_RELEASE_*` environment variables; the bundle is not ready for distribution until signed and verified with the owner-controlled key. |
 | Physical two-phone use | Not tested | ADB found no connected emulator or phone. No live Supabase project credentials are configured. |
 | Release signing | Blocked by owner-controlled signing key | No keystore was created. The owner must create and securely back up the production signing key once, then store it outside the repository. |
 
@@ -69,8 +76,12 @@ testing. It intentionally records physical-device checks as pending.
 
 - Replace shared-room-key invitation transport with an established,
   authenticated E2E protocol before sending sensitive content remotely.
+- Synchronize pair-specific prompt history and game state between devices.
 - Complete remote game-session synchronization, reconnection and retry
   handling; per-game mechanics listed above remain in progress.
+- Wire invitation, game, turn, trophy and presence events to push dispatch.
+- Add authenticated E2E device identity/key agreement and pair-scoped history;
+  local content history is not synchronized to the room.
 - Run Supabase reset/pgTAP tests with Docker, deploy the migrations/functions,
   configure Realtime and schedule cleanup.
 - Configure Firebase project/package identity, add owner-provided

@@ -23,4 +23,16 @@
 
 Web Crypto AES-GCM encrypts text with a locally stored room JWK. This is not
 yet a complete device-to-device cryptographic protocol. The key is not managed
-per device and server-side authorization is not implemented.
+per device and cryptographic authorization of devices is not implemented.
+
+## Invitations and notifications
+
+Web invites use the current hosted origin. Android invites use the registered
+`afterdark://join` scheme and the Capacitor App plugin routes cold/warm links to
+the join screen. Device testing is still required.
+
+Push token refresh and revocation are wired to the room membership. The server
+dispatch currently has only the chat-message event wired from the UI; game,
+turn, trophy and presence event producers are not implemented. Realtime game
+state synchronization is also not implemented, and Anywhere mode stays
+disabled.

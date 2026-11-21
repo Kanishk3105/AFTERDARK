@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { useAppStore } from '@/stores/app.store';
 import { ToastProvider } from '@/components/ui/Toast';
 import { hydrate } from '@/data/hydrate';
@@ -24,16 +26,35 @@ import { useChatStore } from '@/stores/chat.store';
 import { subscribeRemoteRoom } from '@/services/sync';
 import type { ChatMessage } from '@/types';
 import { initializeNotifications } from '@/services/notifications';
+import { inviteTokenFromDeepLink } from '@/services/pairing';
 
 function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
+  const notificationPreferences = useAppStore((s) => s.preferences.notifications);
 
   useEffect(() => {
+    let disposed = false;
+    let removeUrlListener: (() => void) | null = null;
+    const handleInviteUrl = (url: string) => {
+      const token = inviteTokenFromDeepLink(url);
+      if (token) navigate(`/join#${token}`);
+    };
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener('appUrlOpen', ({ url }) => handleInviteUrl(url))
+        .then((listener) => {
+          if (disposed) void listener.remove();
+          else removeUrlListener = () => { void listener.remove(); };
+        })
+        .catch((error: unknown) => console.error('Application link listener failed', error));
+      void CapacitorApp.getLaunchUrl()
+        .then((launch) => {
+          if (!disposed && launch?.url) handleInviteUrl(launch.url);
+        })
+        .catch((error: unknown) => console.error('Application launch link lookup failed', error));
+    }
     hydrate();
-    void initializeNotifications().catch((error: unknown) => {
-      console.error('Notification initialization failed', error);
-    });
     const unsubscribe = subscribe((envelope) => {
       if (envelope.type !== 'chat') return;
       const roomCode = useAppStore.getState().roomCode;
@@ -79,10 +100,18 @@ function App() {
         .catch((error: unknown) => console.error('Remote room subscription failed', error));
     }
     return () => {
+      disposed = true;
+      removeUrlListener?.();
       unsubscribe();
       if (unsubscribeRemote) void unsubscribeRemote();
     };
   }, []);
+
+  useEffect(() => {
+    void initializeNotifications().catch((error: unknown) => {
+      console.error('Notification initialization failed', error);
+    });
+  }, [notificationPreferences]);
 
   return (
     <ToastProvider>

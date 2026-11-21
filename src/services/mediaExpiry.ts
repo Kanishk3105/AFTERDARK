@@ -23,8 +23,9 @@ export function expiresAt(expiry: MediaExpiry, now = Date.now(), viewed = false)
   return milliseconds === null ? undefined : new Date(now + milliseconds).toISOString();
 }
 
-export function isExpired(expiresAtValue: string | undefined, now = Date.now(), viewed = false): boolean {
+export function isExpired(expiresAtValue: string | undefined, now = Date.now()): boolean {
   if (!expiresAtValue) return false;
-  if (viewed) return now >= Date.parse(expiresAtValue);
-  return now >= Date.parse(expiresAtValue);
+  const expiryTime = Date.parse(expiresAtValue);
+  if (!Number.isFinite(expiryTime)) return true;
+  return now >= expiryTime;
 }
