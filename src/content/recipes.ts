@@ -1,4 +1,4 @@
-import type { IntensityLevel, MoodId } from '@/types';
+import type { ContentRating, IntensityLevel, MoodId } from '@/types';
 
 export interface AuthoredPrompt {
   id: string;
@@ -7,6 +7,9 @@ export interface AuthoredPrompt {
   intensity: IntensityLevel;
   choices?: string[];
   theme: string;
+  rating?: ContentRating;
+  similarityGroup?: string;
+  templateFingerprint?: string;
 }
 
 export interface GeneratedRecipe {

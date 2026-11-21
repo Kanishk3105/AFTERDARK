@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
-import { awardCompletion } from '@/games/awards';
-import { selectNext } from '@/content/engine';
+import { awardCompletion, notePrompt } from '@/games/awards';
+import { DEFAULT_INTENSITY } from '@/config/app.config';
+import { selectAndRecordMany, selectAndRecordNext } from '@/content/selection';
 import {
   createMenu,
   createChallenge,
@@ -58,6 +59,30 @@ import { EMOJI_DECK } from '@/content/recipes';
 import type { PreferenceChoice } from '@/games/dedicated';
 import { GameCover } from '@/components/branding/GameCover';
 import { AFTERDARK_ASSETS } from '@/assets/afterdark';
+import type { ContentCard } from '@/types';
+
+const PRIVATE_CHOICE_GAMES = new Set([
+  'love-quiz',
+  'desire-match',
+  'desire-quiz',
+  'fantasy-cards',
+]);
+
+const CHALLENGE_PROMPT_GAMES = new Set([
+  'memory-lane',
+  'couple-challenges',
+  'challenge-duel',
+]);
+
+const PRELOADED_CONTENT_GAMES = new Set([
+  ...PRIVATE_CHOICE_GAMES,
+  ...CHALLENGE_PROMPT_GAMES,
+  'love-language',
+  'temptations',
+  'emoji-confessions',
+  'scenario-builder',
+  'the-menu',
+]);
 
 interface Props {
   gameId: string;
@@ -74,9 +99,7 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const patchSession = useGameStore((s) => s.patchSession);
   const endSession = useGameStore((s) => s.endSession);
   const saveMemory = useGameStore((s) => s.saveMemory);
-  const cardHistory = useGameStore((s) => s.cardHistory);
-  const fingerprints = useGameStore((s) => s.fingerprints);
-  const recordCardEncountered = useGameStore((s) => s.recordCardEncountered);
+  const updateCardEncounterStatus = useGameStore((s) => s.updateCardEncounterStatus);
   const activeEngine = activeSession?.engine;
   const [menu, setMenu] = useState<MenuModel>(() =>
     isMenuModel(activeEngine) && activeEngine.gameId === gameId
@@ -97,6 +120,9 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const [preference, setPreference] = useState(() =>
     createPreferenceModel(gameId, ['Which pace feels right tonight?', 'What kind of attention feels best?', 'What boundary matters most?', 'What would feel exciting but safe?']),
   );
+  const [openingCard, setOpeningCard] = useState<ContentCard | null>(null);
+  const [contentReady, setContentReady] = useState(() => !PRELOADED_CONTENT_GAMES.has(gameId));
+  const [contentError, setContentError] = useState('');
   const [answerA, setAnswerA] = useState<PreferenceChoice>();
   const [answerB, setAnswerB] = useState<PreferenceChoice>();
   const initialScenario = isScenarioBuilderModel(activeEngine)
@@ -146,6 +172,79 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     : createRouletteModel(gameId);
   const [roulette, setRoulette] = useState<RouletteModel>(initialRoulette);
 
+  useEffect(() => {
+    if (!PRELOADED_CONTENT_GAMES.has(gameId)) return;
+    let cancelled = false;
+    setContentReady(false);
+    setContentError('');
+    const sessionId = activeSession?.id ?? 'unscoped';
+    const request = {
+      gameId,
+      intensity: activeSession?.intensity ?? DEFAULT_INTENSITY,
+      excludedTopics,
+      history: [],
+      fingerprints: [],
+      distribution: 'private' as const,
+    };
+
+    const loadContent = async () => {
+      if (PRIVATE_CHOICE_GAMES.has(gameId)) {
+        const selected = await selectAndRecordMany(
+          request,
+          4,
+          sessionId,
+          `${sessionId}:${gameId}:preload`,
+        );
+        if (!selected.ok) throw new Error(selected.reason);
+        if (cancelled) return;
+        setPreference(createPreferenceModel(gameId, selected.cards));
+        selected.cards.forEach((card, index) => notePrompt(card, selected.recorded[index]));
+      } else {
+        const selected = await selectAndRecordNext(
+          request,
+          sessionId,
+          `${sessionId}:${gameId}:preload`,
+        );
+        if (!selected.ok) throw new Error(selected.reason);
+        if (cancelled) return;
+        setOpeningCard(selected.card);
+        notePrompt(selected.card, selected.recorded);
+        if (CHALLENGE_PROMPT_GAMES.has(gameId)) {
+          const nextChallenge = createChallenge(
+            gameId,
+            selected.card.prompt,
+            gameId === 'couple-challenges',
+          );
+          setChallenge(nextChallenge);
+          setChallengePhase('prompt');
+          patchSession({ engine: nextChallenge });
+        }
+      }
+      setContentReady(true);
+    };
+
+    void loadContent().catch((error: unknown) => {
+      if (cancelled) return;
+      console.error(`Loading ${gameId} content failed`, error);
+      setContentError(error instanceof Error ? error.message : 'The content pool could not be loaded.');
+      setContentReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId, activeSession?.id, activeSession?.intensity, excludedTopics]);
+
+  useEffect(() => {
+    if (!contentReady || !PRIVATE_CHOICE_GAMES.has(gameId)) return;
+    const cardId = preference.rounds[preference.roundIndex]?.cardId;
+    if (!cardId) return;
+    void updateCardEncounterStatus(cardId, 'shown').catch((error: unknown) => {
+      console.error('Marking preference prompt as shown failed', error);
+      showToast('The prompt appeared, but its history status could not be updated.', 'warning');
+    });
+  }, [contentReady, gameId, preference.roundIndex]);
+
   const isMenu = gameId === 'the-menu';
   const isLoveLanguage = gameId === 'love-language';
   const isRankedGame = isMenu || isLoveLanguage;
@@ -170,6 +269,13 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const submitB = (choice: PreferenceChoice) => {
     setAnswerB(choice);
     setPreference((model) => submitPrivateChoice(model, 'b', choice));
+    const cardId = preference.rounds[preference.roundIndex]?.cardId;
+    if (cardId) {
+      void updateCardEncounterStatus(cardId, 'completed').catch((error: unknown) => {
+        console.error('Saving completed preference history failed', error);
+        showToast('The reveal completed, but its history status could not be saved.', 'warning');
+      });
+    }
     setPhase('reveal');
   };
 
@@ -206,6 +312,12 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   };
 
   const finishGame = () => {
+    if ((gameId === 'love-language' || gameId === 'the-menu') && openingCard) {
+      void updateCardEncounterStatus(openingCard.id, 'completed').catch((error: unknown) => {
+        console.error('Saving completed ranking history failed', error);
+        showToast('The results were saved, but their history status could not be updated.', 'warning');
+      });
+    }
     awardCompletion({
       gameId,
       moodId: moodId as 'platonic' | 'romantic' | 'sexual' | 'fantasy',
@@ -223,6 +335,17 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     setChallenge(next);
     setChallengePhase(nextPhase);
     patchSession({ engine: next, scores: next.scores });
+    if (openingCard && next.status === 'completed') {
+      void updateCardEncounterStatus(openingCard.id, 'completed').catch((error: unknown) => {
+        console.error('Saving completed challenge history failed', error);
+        showToast('The challenge completed, but its history status could not be saved.', 'warning');
+      });
+    } else if (openingCard && next.status === 'declined') {
+      void updateCardEncounterStatus(openingCard.id, 'passed').catch((error: unknown) => {
+        console.error('Saving declined challenge history failed', error);
+        showToast('The decline was accepted, but its history status could not be saved.', 'warning');
+      });
+    }
   };
 
   const submitPrivateChallengeAnswer = (player: 0 | 1) => {
@@ -243,6 +366,17 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const updateTemptation = (next: TemptationsModel) => {
     setTemptation(next);
     patchSession({ engine: next });
+    if (openingCard && next.status === 'approved') {
+      void updateCardEncounterStatus(openingCard.id, 'completed').catch((error: unknown) => {
+        console.error('Saving approved temptation history failed', error);
+        showToast('The choice was saved, but its history status could not be updated.', 'warning');
+      });
+    } else if (openingCard && next.status === 'declined') {
+      void updateCardEncounterStatus(openingCard.id, 'passed').catch((error: unknown) => {
+        console.error('Saving declined temptation history failed', error);
+        showToast('The decline was saved, but its history status could not be updated.', 'warning');
+      });
+    }
   };
 
   const saveTemptationChoices = () => {
@@ -257,6 +391,12 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const updateEmojiModel = (next: typeof emojiConfession) => {
     setEmojiConfession(next);
     patchSession({ engine: next });
+    if (openingCard && next.status === 'revealed') {
+      void updateCardEncounterStatus(openingCard.id, 'completed').catch((error: unknown) => {
+        console.error('Saving emoji confession history failed', error);
+        showToast('The reveal completed, but its history status could not be saved.', 'warning');
+      });
+    }
   };
 
   const sendEmojiConfession = () => {
@@ -271,6 +411,17 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const updateScenario = (next: ScenarioBuilderModel) => {
     setScenario(next);
     patchSession({ engine: next });
+    if (openingCard && next.status === 'approved') {
+      void updateCardEncounterStatus(openingCard.id, 'completed').catch((error: unknown) => {
+        console.error('Saving approved scenario history failed', error);
+        showToast('The scenario was approved, but its history status could not be saved.', 'warning');
+      });
+    } else if (openingCard && next.status === 'declined') {
+      void updateCardEncounterStatus(openingCard.id, 'passed').catch((error: unknown) => {
+        console.error('Saving declined scenario history failed', error);
+        showToast('The decline was saved, but its history status could not be updated.', 'warning');
+      });
+    }
   };
 
   const sendScenarioForApproval = () => {
@@ -292,28 +443,33 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     updateEmojiModel(next);
   };
 
-  const spinRoulette = () => {
-    const result = selectNext({
-      gameId,
-      intensity: activeSession?.intensity ?? 'moderate',
-      excludedTopics,
-      history: cardHistory,
-      fingerprints,
-      distribution: 'private',
-    });
-    if (!result.ok) {
-      showToast(result.reason, 'warning');
-      return;
-    }
+  const spinRoulette = async () => {
+    try {
+      if (roulette.currentCard) {
+        await updateCardEncounterStatus(roulette.currentCard.id, 'completed');
+      }
+      const result = await selectAndRecordNext({
+        gameId,
+        intensity: activeSession?.intensity ?? 'moderate',
+        excludedTopics,
+        history: [],
+        fingerprints: [],
+        distribution: 'private',
+      }, activeSession?.id ?? 'unscoped',
+      `${activeSession?.id ?? 'unscoped'}:${gameId}:roulette:${roulette.spinCount + 1}`);
+      if (!result.ok) {
+        showToast(result.reason, 'warning');
+        return;
+      }
 
-    const next = recordRouletteSpin(roulette, result.card);
-    if (next === roulette) {
-      showToast('That card was already used. Spin again for a new one.', 'warning');
-      return;
+      const next = recordRouletteSpin(roulette, result.card);
+      setRoulette(next);
+      patchSession({ engine: next });
+      notePrompt(result.card, result.recorded);
+    } catch (error) {
+      console.error('Roulette selection failed', error);
+      showToast('Could not spin for a new card. Your history was preserved.', 'error');
     }
-    setRoulette(next);
-    patchSession({ engine: next });
-    recordCardEncountered(result.card.id, result.card.similarityFingerprint, gameId);
   };
 
   const choiceButtons: [PreferenceChoice, string][] = [
@@ -321,6 +477,27 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     ['maybe', 'Maybe / with limits'],
     ['no', 'No / leave it out'],
   ];
+
+  if (!contentReady) {
+    return (
+      <div className="space-y-4 px-4 py-8 text-center">
+        <p className="text-sm text-ad-text-secondary">Checking this game’s content pool and local history…</p>
+      </div>
+    );
+  }
+
+  if (contentError) {
+    return (
+      <div className="space-y-4 px-4 py-8 text-center">
+        <h2 className="font-display text-lg text-ad-gold">No eligible content available</h2>
+        <p className="text-sm text-ad-text-secondary">{contentError}</p>
+        <p className="text-xs text-ad-text-secondary">
+          No lower-intensity or previously shown card was substituted. Choose another intensity or game.
+        </p>
+        <Button fullWidth onClick={() => navigate(`/games/${moodId}/${gameId}`)}>Return to game setup</Button>
+      </div>
+    );
+  }
 
   if (phase === 'finished') {
     return (
@@ -353,6 +530,12 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
         <span className="text-xs text-ad-gold">{playerName} & {partnerName}</span>
       </div>
       <GameCover gameId={gameId} className="h-32 w-full" />
+      {openingCard && !isPrivateChoice && !isDuel && !isRoulette && (
+        <Card variant="glass" className="p-4 border-ad-gold/30">
+          <p className="text-[10px] uppercase tracking-wider text-ad-gold">{openingCard.theme}</p>
+          <p className="mt-2 text-sm text-ad-text">{openingCard.prompt}</p>
+        </Card>
+      )}
 
       {isPrivateChoice && (
         <>

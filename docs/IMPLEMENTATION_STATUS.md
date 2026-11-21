@@ -5,9 +5,11 @@ route or a compiling native plugin is not proof of a complete user flow.
 
 ## Individual game audit
 
-All 21 game IDs are registered and have content entries. The table describes
-the current pass-and-play implementation; none has tested two-phone gameplay,
-reconnection, or synchronized answer privacy.
+All 21 game IDs are registered. [The machine-readable coverage matrix](../reports/game-content-coverage.json)
+records each game's mechanics description, total and per-intensity content
+counts, selector/history integration, boundary gaps, and test scope. The table
+describes the current pass-and-play implementation; none has tested two-phone
+gameplay, reconnection, or synchronized answer privacy.
 
 | Mood | Game | Local implementation and remaining gap |
 |---|---|---|
@@ -39,33 +41,38 @@ Run `npm run content:audit` to regenerate the
 machine-readable `reports/content-catalogue-audit.json` report and print it to
 stdout. The audit measures generated/unique experiences, duplicate IDs,
 normalized prompts, near-duplicate examples, required metadata, game
-categorization and public/private eligibility. At this revision it reports
-19,074 generated combinations and 11,075 valid unique private-build
+categorization and public/private eligibility. The latest local audit reports
+19,182 generated experiences and 11,494 valid unique private-build
 experiences, with zero duplicate IDs, zero exact duplicate experiences, and
-7,999 lexical near-duplicate candidates excluded. It also reports 18,955
-unique normalized prompt strings (119 repeated prompt strings, including
-reusable stems). Near-duplicate comparisons use normalized prompt/choice token
-sets and Jaccard similarity >= 0.82; this is a lexical heuristic, not a
-semantic language model. This total does not apply an individual couple’s
-intensity or excluded-topic settings. Pair history remains local and is not
-synchronized between devices.
+7,688 lexical near-duplicate candidates excluded. Near-duplicate comparisons
+use normalized prompt/choice token sets and Jaccard similarity >= 0.82; this is
+a lexical heuristic, not semantic AI. This total does not apply an individual
+couple's excluded-topic settings.
 
-New profiles default to Moderate (55/100). The shared scale is Mild (20),
-Moderate (55), Spicy (87), and Extreme (100). Selection currently treats the
-chosen level as a ceiling, not as a separate exact-level pool; not all games
-offer a per-game intensity picker, and four independently differentiated
-intensity pools for every game remain incomplete.
+The source now has at least one explicitly classified card for every one of
+the 84 game/intensity combinations. Content selection uses the selected
+intensity exactly; it does not silently fall back to another level. Some
+Spicy/Extreme pools remain only one card deep, and generated catalogues can
+contain near-duplicates; consult the per-game counts before treating these
+seed pools as complete. Spicy includes `pg13-style` and `18-plus` metadata.
+New profiles default to Moderate (55/100); Mild is 20, Spicy 87, and Extreme
+100.
 
-The no-repeat selector excludes all persisted encountered IDs and compares
-against persisted semantic fingerprints. Unit tests cover old semantic
-duplicates and the full catalogue threshold.
+All routed local game flows use an atomic Dexie-backed encounter ledger to
+exclude previously encountered IDs, fingerprints, and similarity groups
+across games and intensity changes. The no-repeat comparison is lexical, not
+semantic AI. History survives app restarts in the same local database but is
+not pair-synchronized or verified across device reinstalls. Pool exhaustion
+returns an explicit message rather than lowering intensity or replaying a
+recorded card.
 
 ## Platform and service verification
 
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Tested | `npm test`; latest run: 65 tests passed across 10 files. |
+| Unit tests | Tested | `npm test`; latest run: 75 tests passed across 12 files. |
+| Supabase Edge Functions | Tested locally | `deno check` passed for all five function entry points; all 12 shared Deno tests passed with default permissions. |
 | Supabase schema and local configuration | New migrations tested in GitHub Actions | Clean local Supabase migration reset and all 41 pgTAP assertions passed; all 12 deterministic Edge Function tests passed in workflow run [#6](https://github.com/Kanishk3105/AFTERDARK/actions/runs/44903437509). Docker remains unavailable locally; live project deployment is not tested. |
 | Supabase remote content | Disabled until E2EE is integrated | The new migration defaults rooms to `e2ee_protocol = 'disabled'`, revokes unused legacy invitations and blocks chat reads/writes, media creation/retrieval, and direct game-session access through server-side policies. Online room invitations no longer contain a room key; legacy v1 links are rejected. Live secure messaging is not available. |
 | Room deletion | Implemented; live Storage/scheduler verification pending | Owner-authenticated deletion immediately revokes both members, invitations, push tokens and notifications. A retryable service-role job removes all room Storage objects before cascading room metadata, chat, games, history, media records and credentials. Deterministic retry tests and pgTAP deletion checks are included; production scheduler execution remains unverified. |
@@ -88,6 +95,9 @@ testing. It intentionally records physical-device checks as pending.
   key lifecycle and independently test it before enabling sensitive remote
   content. The key-bearing invitation format has been removed.
 - Synchronize pair-specific prompt history and game state between devices.
+- Deepen thin curated Spicy/Extreme pools and add game-specific component-flow
+  tests; the 84 non-empty pools do not mean every game has a complete content
+  catalogue or production-depth mechanics at each level.
 - Complete remote game-session synchronization, reconnection and retry
   handling; per-game mechanics listed above remain in progress.
 - Wire invitation, game, turn, trophy and presence events to push dispatch.

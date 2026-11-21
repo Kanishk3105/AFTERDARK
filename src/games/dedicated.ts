@@ -3,6 +3,9 @@ export type PreferenceChoice = 'yes' | 'maybe' | 'no';
 export interface SimultaneousChoice {
   round: number;
   prompt: string;
+  cardId?: string;
+  contentFingerprint?: string;
+  similarityGroup?: string;
   a?: PreferenceChoice;
   b?: PreferenceChoice;
   revealed: boolean;
@@ -15,10 +18,24 @@ export interface PreferenceModel {
   completed: boolean;
 }
 
-export function createPreferenceModel(gameId: string, prompts: string[]): PreferenceModel {
+export function createPreferenceModel(gameId: string, prompts: Array<string | {
+  id: string;
+  prompt: string;
+  contentFingerprint: string;
+  similarityGroup: string;
+}>): PreferenceModel {
   return {
     gameId,
-    rounds: prompts.map((prompt, round) => ({ round, prompt, revealed: false })),
+    rounds: prompts.map((prompt, round) => typeof prompt === 'string'
+      ? { round, prompt, revealed: false }
+      : {
+        round,
+        prompt: prompt.prompt,
+        cardId: prompt.id,
+        contentFingerprint: prompt.contentFingerprint,
+        similarityGroup: prompt.similarityGroup,
+        revealed: false,
+      }),
     roundIndex: 0,
     completed: false,
   };

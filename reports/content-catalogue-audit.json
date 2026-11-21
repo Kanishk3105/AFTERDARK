@@ -1,124 +1,23 @@
 {
-  "generatedExperiences": 19074,
-  "validUniqueExperiences": 11075,
+  "generatedExperiences": 19182,
+  "validUniqueExperiences": 11494,
   "duplicateIds": 0,
   "exactDuplicateExperiences": 0,
-  "nearDuplicateExperiences": 7999,
+  "nearDuplicateExperiences": 7688,
   "nearDuplicateMetric": "normalized-token-set-jaccard",
   "nearDuplicateThreshold": 0.82,
-  "uniqueNormalizedPrompts": 18955,
-  "duplicateNormalizedPrompts": 119,
+  "uniqueNormalizedPrompts": 19182,
+  "duplicateNormalizedPrompts": 0,
   "requiredMetadataErrors": 0,
   "gameCategorizationErrors": 0,
   "eligibility": {
-    "privateBuild": 19074,
-    "publicStore": 18799,
-    "privateBuildOnly": 275
+    "privateBuild": 19182,
+    "publicStore": 18850,
+    "privateBuildOnly": 332
   },
   "examples": {
     "duplicateIds": [],
-    "duplicatePrompts": [
-      {
-        "id": "wyr:0:2",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:3",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:4",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:5",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:6",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:7",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:8",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:9",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:10",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:11",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:12",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:13",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:14",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:0:15",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:1:2",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:1:3",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:1:4",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:1:5",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:1:6",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      },
-      {
-        "id": "wyr:1:7",
-        "gameId": "would-you-rather",
-        "prompt": "Would you rather…"
-      }
-    ],
+    "duplicatePrompts": [],
     "nearDuplicates": [
       {
         "id": "six-questions:0:1:0",
@@ -228,88 +127,466 @@
   },
   "games": {
     "six-questions": {
-      "generated": 962,
-      "validUnique": 329
+      "generated": 966,
+      "validUnique": 333,
+      "byIntensity": {
+        "mild": {
+          "generated": 483,
+          "validUnique": 166
+        },
+        "moderate": {
+          "generated": 481,
+          "validUnique": 165
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "how-well-do-you-know-me": {
-      "generated": 481,
-      "validUnique": 93
+      "generated": 485,
+      "validUnique": 154,
+      "byIntensity": {
+        "mild": {
+          "generated": 242,
+          "validUnique": 84
+        },
+        "moderate": {
+          "generated": 241,
+          "validUnique": 68
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "would-you-rather": {
-      "generated": 120,
-      "validUnique": 120
+      "generated": 124,
+      "validUnique": 124,
+      "byIntensity": {
+        "mild": {
+          "generated": 121,
+          "validUnique": 121
+        },
+        "moderate": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "whos-more-likely": {
-      "generated": 12,
-      "validUnique": 12
+      "generated": 16,
+      "validUnique": 16,
+      "byIntensity": {
+        "mild": {
+          "generated": 13,
+          "validUnique": 13
+        },
+        "moderate": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "love-quiz": {
-      "generated": 481,
-      "validUnique": 275
+      "generated": 491,
+      "validUnique": 285,
+      "byIntensity": {
+        "mild": {
+          "generated": 242,
+          "validUnique": 149
+        },
+        "moderate": {
+          "generated": 241,
+          "validUnique": 128
+        },
+        "spicy": {
+          "generated": 4,
+          "validUnique": 4
+        },
+        "extreme": {
+          "generated": 4,
+          "validUnique": 4
+        }
+      }
     },
     "memory-lane": {
-      "generated": 21,
-      "validUnique": 21
+      "generated": 25,
+      "validUnique": 25,
+      "byIntensity": {
+        "mild": {
+          "generated": 22,
+          "validUnique": 22
+        },
+        "moderate": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "couple-challenges": {
-      "generated": 8,
-      "validUnique": 8
+      "generated": 12,
+      "validUnique": 12,
+      "byIntensity": {
+        "mild": {
+          "generated": 5,
+          "validUnique": 5
+        },
+        "moderate": {
+          "generated": 5,
+          "validUnique": 5
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "romantic-roulette": {
-      "generated": 8,
-      "validUnique": 8
+      "generated": 12,
+      "validUnique": 12,
+      "byIntensity": {
+        "mild": {
+          "generated": 9,
+          "validUnique": 9
+        },
+        "moderate": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "truth-or-dare": {
-      "generated": 122,
-      "validUnique": 122
+      "generated": 126,
+      "validUnique": 126,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 41,
+          "validUnique": 41
+        },
+        "spicy": {
+          "generated": 44,
+          "validUnique": 44
+        },
+        "extreme": {
+          "generated": 40,
+          "validUnique": 40
+        }
+      }
     },
     "desire-match": {
-      "generated": 20,
-      "validUnique": 20
+      "generated": 30,
+      "validUnique": 30,
+      "byIntensity": {
+        "mild": {
+          "generated": 4,
+          "validUnique": 4
+        },
+        "moderate": {
+          "generated": 11,
+          "validUnique": 11
+        },
+        "spicy": {
+          "generated": 11,
+          "validUnique": 11
+        },
+        "extreme": {
+          "generated": 4,
+          "validUnique": 4
+        }
+      }
     },
     "naughty-roulette": {
-      "generated": 20,
-      "validUnique": 19
+      "generated": 24,
+      "validUnique": 23,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 8,
+          "validUnique": 8
+        },
+        "spicy": {
+          "generated": 8,
+          "validUnique": 8
+        },
+        "extreme": {
+          "generated": 7,
+          "validUnique": 6
+        }
+      }
     },
     "temptations": {
-      "generated": 20,
-      "validUnique": 18
+      "generated": 24,
+      "validUnique": 20,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "spicy": {
+          "generated": 21,
+          "validUnique": 17
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "desire-quiz": {
-      "generated": 81,
-      "validUnique": 23
+      "generated": 91,
+      "validUnique": 33,
+      "byIntensity": {
+        "mild": {
+          "generated": 4,
+          "validUnique": 4
+        },
+        "moderate": {
+          "generated": 29,
+          "validUnique": 13
+        },
+        "spicy": {
+          "generated": 30,
+          "validUnique": 7
+        },
+        "extreme": {
+          "generated": 28,
+          "validUnique": 9
+        }
+      }
     },
     "emoji-confessions": {
-      "generated": 12,
-      "validUnique": 9
+      "generated": 16,
+      "validUnique": 13,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 7,
+          "validUnique": 6
+        },
+        "spicy": {
+          "generated": 7,
+          "validUnique": 5
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "fantasy-cards": {
-      "generated": 24,
-      "validUnique": 8
+      "generated": 34,
+      "validUnique": 16,
+      "byIntensity": {
+        "mild": {
+          "generated": 4,
+          "validUnique": 4
+        },
+        "moderate": {
+          "generated": 13,
+          "validUnique": 5
+        },
+        "spicy": {
+          "generated": 13,
+          "validUnique": 3
+        },
+        "extreme": {
+          "generated": 4,
+          "validUnique": 4
+        }
+      }
     },
     "scenario-builder": {
-      "generated": 12,
-      "validUnique": 12
+      "generated": 16,
+      "validUnique": 16,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 13,
+          "validUnique": 13
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "the-menu": {
-      "generated": 12,
-      "validUnique": 12
+      "generated": 16,
+      "validUnique": 16,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 13,
+          "validUnique": 13
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "challenge-duel": {
-      "generated": 12,
-      "validUnique": 12
+      "generated": 16,
+      "validUnique": 16,
+      "byIntensity": {
+        "mild": {
+          "generated": 7,
+          "validUnique": 7
+        },
+        "moderate": {
+          "generated": 7,
+          "validUnique": 7
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "choose-your-story": {
-      "generated": 1,
-      "validUnique": 1
+      "generated": 5,
+      "validUnique": 5,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 2,
+          "validUnique": 2
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "fantasy-roulette": {
-      "generated": 16640,
-      "validUnique": 9948
+      "generated": 16644,
+      "validUnique": 10210,
+      "byIntensity": {
+        "mild": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "moderate": {
+          "generated": 13313,
+          "validUnique": 8184
+        },
+        "spicy": {
+          "generated": 3329,
+          "validUnique": 2024
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     },
     "love-language": {
-      "generated": 5,
-      "validUnique": 5
+      "generated": 9,
+      "validUnique": 9,
+      "byIntensity": {
+        "mild": {
+          "generated": 6,
+          "validUnique": 6
+        },
+        "moderate": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "spicy": {
+          "generated": 1,
+          "validUnique": 1
+        },
+        "extreme": {
+          "generated": 1,
+          "validUnique": 1
+        }
+      }
     }
   }
 }

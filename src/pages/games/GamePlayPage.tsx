@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
-import { selectNext } from '@/content/engine';
+import { selectAndRecordNext } from '@/content/selection';
 import { MOODS } from '@/config/app.config';
-import { EMOJI_DECK, FANTASY_SETTINGS, FANTASY_ATMOSPHERES, FANTASY_THEMES, FANTASY_DIRECTIONS } from '@/content/recipes';
 import { STORY, STORY_TITLE, StoryNode } from '@/content/story';
 import {
   createTod,
@@ -48,6 +47,13 @@ const storyScenes: Record<string, string> = {
   'ending-door': AFTERDARK_ASSETS.scenes.privateLounge,
 };
 
+const CARD_ROUND_GAMES = new Set([
+  'six-questions',
+  'how-well-do-you-know-me',
+  'would-you-rather',
+  'whos-more-likely',
+]);
+
 export const GamePlayPage: React.FC = () => {
   const { moodId, gameId } = useParams<{ moodId: string; gameId: string }>();
   const navigate = useNavigate();
@@ -59,15 +65,15 @@ export const GamePlayPage: React.FC = () => {
 
   const activeSession = useGameStore((s) => s.activeSession);
   const sessionIntensity = activeSession?.intensity ?? DEFAULT_INTENSITY;
-  const cardHistory = useGameStore((s) => s.cardHistory);
-  const fingerprints = useGameStore((s) => s.fingerprints);
-  const recordCardEncountered = useGameStore((s) => s.recordCardEncountered);
+  const updateCardEncounterStatus = useGameStore((s) => s.updateCardEncounterStatus);
   const saveMemory = useGameStore((s) => s.saveMemory);
   const endSession = useGameStore((s) => s.endSession);
 
   // General Turn State for Multi-round Games (e.g. Six Questions, WYR, Quiz)
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
   const [currentCard, setCurrentCard] = useState<ContentCard | null>(null);
+  const [cardLoading, setCardLoading] = useState(() => CARD_ROUND_GAMES.has(gameId ?? ''));
+  const [cardLoadError, setCardLoadError] = useState('');
   const [phase, setPhase] = useState<'handoff1' | 'answer1' | 'handoff2' | 'guess2' | 'reveal' | 'finished'>('handoff1');
   
   // Player Answers
@@ -80,14 +86,54 @@ export const GamePlayPage: React.FC = () => {
   // Spin Wheel State (Roulette games)
   const [isSpinning, setIsSpinning] = useState(false);
   const [wheelResult, setWheelResult] = useState<string>('');
+  const rouletteSpinSequence = useRef(0);
 
   // Story Mode State
   const [storyNodeId, setStoryNodeId] = useState<string>('start');
+  const [storyOpeningCard, setStoryOpeningCard] = useState<ContentCard | null>(null);
+  const [storyContentReady, setStoryContentReady] = useState(() => gameId !== 'choose-your-story');
+  const [storyContentError, setStoryContentError] = useState('');
   useEffect(() => {
     if (gameId !== 'choose-your-story') return;
     const saved = activeSession?.engine as { storyNodeId?: string } | undefined;
     if (saved?.storyNodeId && STORY[saved.storyNodeId]) setStoryNodeId(saved.storyNodeId);
   }, [gameId, activeSession?.engine]);
+
+  useEffect(() => {
+    if (gameId !== 'choose-your-story') return;
+    let cancelled = false;
+    setStoryContentReady(false);
+    setStoryContentError('');
+    const sessionId = activeSession?.id ?? 'unscoped';
+    void selectAndRecordNext({
+      gameId,
+      intensity: sessionIntensity,
+      excludedTopics,
+      history: [],
+      fingerprints: [],
+      distribution: 'private',
+    }, sessionId, `${sessionId}:${gameId}:opening`)
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok) {
+          setStoryContentError(result.reason);
+          setStoryContentReady(true);
+          return;
+        }
+        setStoryOpeningCard(result.card);
+        notePrompt(result.card, result.recorded);
+        setStoryContentReady(true);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error('Loading story content failed', error);
+        setStoryContentError('The story content pool could not be loaded.');
+        setStoryContentReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId, activeSession?.id, sessionIntensity, excludedTopics]);
 
   // Truth or Dare Engine State
   const [todState, setTodState] = useState<TodModel>(() => createTod('adventure'));
@@ -106,46 +152,74 @@ export const GamePlayPage: React.FC = () => {
   const p2Label = activeFirstPlayerIndex === 0 ? partnerName : playerName;
 
   // Load question for current game
-  const fetchNextCard = () => {
-    if (!gameId) return;
-    const res = selectNext({
-      gameId,
-      intensity: sessionIntensity,
-      excludedTopics,
-      history: cardHistory,
-      fingerprints,
-    });
+  const fetchNextCard = async () => {
+    if (!gameId || !CARD_ROUND_GAMES.has(gameId)) return;
+    setCurrentCard(null);
+    setCardLoading(true);
+    setCardLoadError('');
+    try {
+      const sessionId = activeSession?.id ?? 'unscoped';
+      const res = await selectAndRecordNext({
+        gameId,
+        intensity: sessionIntensity,
+        excludedTopics,
+        history: [],
+        fingerprints: [],
+      }, sessionId, `${sessionId}:${gameId}:round:${currentRoundNum}`);
 
-    if (res.ok) {
+      if (!res.ok) {
+        setCardLoadError(res.reason);
+        showToast(res.reason, 'info');
+        return;
+      }
       setCurrentCard(res.card);
-      recordCardEncountered(res.card.id, res.card.similarityFingerprint, gameId);
-      notePrompt(res.card.id, res.card.similarityFingerprint, gameId);
-    } else {
-      showToast(res.reason, 'info');
+      notePrompt(res.card, res.recorded);
+    } catch (error) {
+      console.error('Selecting the next content card failed', error);
+      setCardLoadError('Could not load a new card. Your history was preserved.');
+      showToast('Could not load a new card. Your history was preserved.', 'error');
+    } finally {
+      setCardLoading(false);
     }
   };
 
-  const selectTruthOrDareCard = () => {
-    const { cardHistory: currentHistory, fingerprints: currentFingerprints } = useGameStore.getState();
-    const result = selectNext({
-      gameId: 'truth-or-dare',
-      intensity: sessionIntensity,
-      excludedTopics,
-      history: currentHistory,
-      fingerprints: currentFingerprints,
-    });
-    if (!result.ok) {
-      showToast(result.reason, 'warning');
+  const selectTruthOrDareCard = async () => {
+    try {
+      const sessionId = activeSession?.id ?? 'unscoped';
+      const result = await selectAndRecordNext({
+        gameId: 'truth-or-dare',
+        intensity: sessionIntensity,
+        excludedTopics,
+        history: [],
+        fingerprints: [],
+      }, sessionId, `${sessionId}:truth-or-dare:${crypto.randomUUID()}`);
+      if (!result.ok) {
+        showToast(result.reason, 'warning');
+        return null;
+      }
+
+      notePrompt(result.card, result.recorded);
+      return result;
+    } catch (error) {
+      console.error('Truth or Dare selection failed', error);
+      showToast('Could not load a new challenge. Your history was preserved.', 'error');
       return null;
     }
+  };
 
-    recordCardEncountered(result.card.id, result.card.similarityFingerprint, 'truth-or-dare');
-    notePrompt(result.card.id, result.card.similarityFingerprint, 'truth-or-dare');
-    return result.card;
+  const updateTodEncounterStatus = (status: 'completed' | 'passed') => {
+    if (!todState.promptId) return;
+    void updateCardEncounterStatus(todState.promptId, status).catch((error: unknown) => {
+      console.error('Updating Truth or Dare content history failed', error);
+      showToast('The challenge changed, but its history status could not be saved.', 'warning');
+    });
   };
 
   useEffect(() => {
-    fetchNextCard();
+    void fetchNextCard().catch((error: unknown) => {
+      console.error('Selecting the next content card failed', error);
+      showToast('Could not load a new card. Your history was preserved.', 'error');
+    });
   }, [currentRoundNum]);
 
   // Hand-off handlers
@@ -178,6 +252,12 @@ export const GamePlayPage: React.FC = () => {
       },
     ]);
 
+    if (currentCard) {
+      void updateCardEncounterStatus(currentCard.id, 'completed').catch((error: unknown) => {
+        console.error('Updating completed content history failed', error);
+        showToast('The round finished, but its history status could not be saved.', 'warning');
+      });
+    }
     setPhase('reveal');
   };
 
@@ -190,6 +270,9 @@ export const GamePlayPage: React.FC = () => {
       finishGame();
       return;
     }
+    setCurrentCard(null);
+    setCardLoadError('');
+    setCardLoading(true);
     setCurrentRoundNum((r) => r + 1);
     setAnsPlayer1('');
     setAnsPlayer2('');
@@ -198,6 +281,12 @@ export const GamePlayPage: React.FC = () => {
   };
 
   const finishGame = () => {
+    if (gameId === 'choose-your-story' && storyOpeningCard) {
+      void updateCardEncounterStatus(storyOpeningCard.id, 'completed').catch((error: unknown) => {
+        console.error('Saving completed story history failed', error);
+        showToast('The story ended, but its history status could not be saved.', 'warning');
+      });
+    }
     const perfectSix =
       gameId === 'six-questions' &&
       roundHistory.length === 6 &&
@@ -218,32 +307,33 @@ export const GamePlayPage: React.FC = () => {
     if (isSpinning) return;
     setIsSpinning(true);
     setWheelResult('');
+    rouletteSpinSequence.current += 1;
+    const spinNumber = rouletteSpinSequence.current;
+    const sessionId = activeSession?.id ?? 'unscoped';
 
     setTimeout(() => {
-      if (gameId === 'fantasy-roulette') {
-        const s = FANTASY_SETTINGS[Math.floor(Math.random() * FANTASY_SETTINGS.length)];
-        const a = FANTASY_ATMOSPHERES[Math.floor(Math.random() * FANTASY_ATMOSPHERES.length)];
-        const t = FANTASY_THEMES[Math.floor(Math.random() * FANTASY_THEMES.length)];
-        const d = FANTASY_DIRECTIONS[Math.floor(Math.random() * FANTASY_DIRECTIONS.length)];
-        setWheelResult(`Setting: ${s} · Atmosphere: ${a} · Theme: ${t} · Direction: ${d}`);
-      } else {
-        const res = selectNext({
-          gameId: gameId || 'romantic-roulette',
-          intensity: sessionIntensity,
-          excludedTopics,
-          history: cardHistory,
-          fingerprints,
-        });
-        if (res.ok) {
-          setWheelResult(res.card.prompt);
-          recordCardEncountered(res.card.id, res.card.similarityFingerprint, gameId || 'romantic-roulette');
-          notePrompt(res.card.id, res.card.similarityFingerprint, gameId || 'romantic-roulette');
-        } else {
+      void selectAndRecordNext({
+        gameId: gameId || 'fantasy-roulette',
+        intensity: sessionIntensity,
+        excludedTopics,
+        history: [],
+        fingerprints: [],
+      }, sessionId, `${sessionId}:${gameId || 'fantasy-roulette'}:spin:${spinNumber}`)
+        .then((result) => {
+          if (!result.ok) {
+            setWheelResult('');
+            showToast(result.reason, 'warning');
+            return;
+          }
+          setWheelResult(result.card.prompt);
+          notePrompt(result.card, result.recorded);
+        })
+        .catch((error: unknown) => {
+          console.error('Roulette selection failed', error);
           setWheelResult('');
-          showToast(res.reason, 'warning');
-        }
-      }
-      setIsSpinning(false);
+          showToast('Could not spin for a new card. Your history was preserved.', 'error');
+        })
+        .finally(() => setIsSpinning(false));
     }, 2000);
   };
 
@@ -255,6 +345,7 @@ export const GamePlayPage: React.FC = () => {
     'romantic-roulette',
     'desire-match',
     'naughty-roulette',
+    'fantasy-roulette',
     'desire-quiz',
     'temptations',
     'emoji-confessions',
@@ -263,6 +354,50 @@ export const GamePlayPage: React.FC = () => {
     'the-menu',
     'challenge-duel',
   ]);
+
+  if (gameId === 'choose-your-story' && !storyContentReady) {
+    return (
+      <div className="space-y-4 px-4 py-8 text-center">
+        <p className="text-sm text-ad-text-secondary">Checking the story pool and local history…</p>
+      </div>
+    );
+  }
+
+  if (gameId === 'choose-your-story' && storyContentError) {
+    return (
+      <div className="space-y-4 px-4 py-8 text-center">
+        <h2 className="font-display text-lg text-ad-gold">No eligible story opening</h2>
+        <p className="text-sm text-ad-text-secondary">{storyContentError}</p>
+        <p className="text-xs text-ad-text-secondary">
+          No lower-intensity or previously shown opening was substituted.
+        </p>
+        <Button fullWidth onClick={() => navigate(`/games/${moodId}/${gameId}`)}>Return to game setup</Button>
+      </div>
+    );
+  }
+
+  if (CARD_ROUND_GAMES.has(gameId ?? '') && cardLoading) {
+    return (
+      <div className="space-y-4 px-4 py-8 text-center">
+        <p className="text-sm text-ad-text-secondary">Checking this round's content pool and local history…</p>
+      </div>
+    );
+  }
+
+  if (CARD_ROUND_GAMES.has(gameId ?? '') && (!currentCard || cardLoadError)) {
+    return (
+      <div className="space-y-4 px-4 py-8 text-center">
+        <h2 className="font-display text-lg text-ad-gold">No eligible card available</h2>
+        <p className="text-sm text-ad-text-secondary">
+          {cardLoadError || 'No card was selected for this round.'}
+        </p>
+        <p className="text-xs text-ad-text-secondary">
+          No lower-intensity or previously shown card was substituted.
+        </p>
+        <Button fullWidth onClick={() => navigate(`/games/${moodId}/${gameId}`)}>Return to game setup</Button>
+      </div>
+    );
+  }
 
   if (dedicatedGameIds.has(gameId || '') && moodId) {
     return <DedicatedGamePage gameId={gameId || ''} moodId={moodId} />;
@@ -350,9 +485,11 @@ export const GamePlayPage: React.FC = () => {
                     size="lg"
                     variant="secondary"
                     className="py-6 text-lg font-display tracking-widest uppercase border-ad-gold/60"
-                    onClick={() => {
-                      const card = selectTruthOrDareCard();
-                      if (card) setTodState((prev) => chooseKind(prev, 'truth', card.prompt, card.id));
+                    onClick={async () => {
+                      const selected = await selectTruthOrDareCard();
+                      if (selected) {
+                        setTodState((prev) => chooseKind(prev, 'truth', selected.card.prompt, selected.card.id));
+                      }
                     }}
                   >
                     TRUTH 🌹
@@ -362,9 +499,11 @@ export const GamePlayPage: React.FC = () => {
                     size="lg"
                     variant="primary"
                     className="py-6 text-lg font-display tracking-widest uppercase shadow-xl shadow-ad-red/40"
-                    onClick={() => {
-                      const card = selectTruthOrDareCard();
-                      if (card) setTodState((prev) => chooseKind(prev, 'dare', card.prompt, card.id));
+                    onClick={async () => {
+                      const selected = await selectTruthOrDareCard();
+                      if (selected) {
+                        setTodState((prev) => chooseKind(prev, 'dare', selected.card.prompt, selected.card.id));
+                      }
                     }}
                   >
                     DARE 🔥
@@ -426,16 +565,20 @@ export const GamePlayPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="primary"
-                    onClick={() => setTodState((s) => completeChallenge(acceptChallenge(s)))}
+                    onClick={() => {
+                      updateTodEncounterStatus('completed');
+                      setTodState((s) => completeChallenge(acceptChallenge(s)));
+                    }}
                   >
                     ✓ Complete
                   </Button>
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      const card = selectTruthOrDareCard();
-                      if (!card) return;
-                      setTodState((s) => swapIn(s, card.prompt, card.id));
+                    onClick={async () => {
+                      const selected = await selectTruthOrDareCard();
+                      if (!selected) return;
+                      updateTodEncounterStatus('passed');
+                      setTodState((s) => swapIn(s, selected.card.prompt, selected.card.id));
                       showToast('Challenge swapped', 'info');
                     }}
                   >
@@ -444,9 +587,10 @@ export const GamePlayPage: React.FC = () => {
                   <Button
                     variant="ghost"
                     className="border border-ad-burgundy/40 text-red-300"
-                    onClick={() => {
-                      const alt = 'Optional: Whisper what you want most from this evening.';
-                      setTodState((s) => passChallenge(s, alt));
+                    onClick={async () => {
+                      updateTodEncounterStatus('passed');
+                      const alternative = await selectTruthOrDareCard();
+                      setTodState((s) => passChallenge(s, alternative?.card.prompt));
                     }}
                   >
                     × Pass (+1 Strike)
@@ -1097,6 +1241,9 @@ export const GamePlayPage: React.FC = () => {
             </div>
 
             <Card variant="glass" className="p-5 space-y-4 border-ad-burgundy/60 shadow-2xl leading-relaxed text-sm text-ad-text">
+              {storyOpeningCard && (
+                <p className="text-ad-gold">{storyOpeningCard.prompt}</p>
+              )}
               <p>{STORY[storyNodeId]?.text}</p>
             </Card>
 

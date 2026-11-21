@@ -1,6 +1,6 @@
 import { useGameStore } from '@/stores/game.store';
 import { useTrophyStore } from '@/stores/trophy.store';
-import type { MoodId } from '@/types';
+import type { ContentCard, MoodId } from '@/types';
 
 export function awardCompletion(extra?: {
   perfectSix?: boolean;
@@ -35,10 +35,6 @@ export function noteRoomCreated(): void {
   useTrophyStore.getState().incrementProgress('rooms_created');
 }
 
-export function notePrompt(cardId: string, fingerprint: string, gameId: string): void {
-  const games = useGameStore.getState();
-  if (!games.cardHistory.includes(cardId)) {
-    games.recordCardEncountered(cardId, fingerprint, gameId);
-    useTrophyStore.getState().incrementProgress('unique_prompts');
-  }
+export function notePrompt(_card: ContentCard, recorded: boolean): void {
+  if (recorded) useTrophyStore.getState().incrementProgress('unique_prompts');
 }

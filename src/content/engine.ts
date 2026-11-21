@@ -8,6 +8,7 @@ import {
   type AuthoredPrompt,
   type GeneratedRecipe,
 } from '@/content/recipes';
+import { CURATED_POOLS, curatedPromptCount, curatedPromptsForGame } from '@/content/curated-pools';
 import type { ContentCard, IntensityLevel, MoodId } from '@/types';
 
 const INTENSITY_RANK: Record<IntensityLevel, number> = {
@@ -29,6 +30,7 @@ export interface SelectRequest {
   excludedTopics: string[];
   history: string[];
   fingerprints: string[];
+  similarityGroups?: string[];
   distribution?: 'private' | 'public';
   match?: (card: ContentCard) => boolean;
 }
@@ -36,11 +38,19 @@ export interface SelectRequest {
 export type SelectResult =
   | { ok: true; card: ContentCard }
   | { ok: false; reason: string };
+export type SuccessfulSelection = Extract<SelectResult, { ok: true }>;
+
+export function normalizeContentText(text: string): string {
+  return text
+    .normalize('NFKC')
+    .toLocaleLowerCase('en-US')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export function fingerprint(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+  return normalizeContentText(text)
     .split(/\s+/)
     .filter((word) => word && !STOP.has(word))
     .sort()
@@ -59,24 +69,23 @@ export function jaccard(a: string, b: string): number {
   return union === 0 ? 0 : intersection / union;
 }
 
-export function generatedCount(recipe: GeneratedRecipe): number {
+function generatedVariantCount(recipe: GeneratedRecipe): number {
   if (recipe.gameId === 'would-you-rather') {
     const n = recipe.topics.length;
-    return (n * (n - 1)) / 2 + recipe.authored.length;
+    return (n * (n - 1)) / 2;
   }
   if (recipe.gameId === 'fantasy-roulette') {
-    return (
-      FANTASY_SETTINGS.length *
-      FANTASY_ATMOSPHERES.length *
-      FANTASY_THEMES.length *
-      FANTASY_DIRECTIONS.length
-    );
+    return FANTASY_SETTINGS.length * FANTASY_ATMOSPHERES.length * FANTASY_THEMES.length * FANTASY_DIRECTIONS.length;
   }
   if (recipe.templates.length === 0 || recipe.topics.length === 0) {
-    return recipe.authored.length;
+    return 0;
   }
   const framings = Math.max(recipe.framings.length, 1);
-  return recipe.templates.length * recipe.topics.length * framings + recipe.authored.length;
+  return recipe.templates.length * recipe.topics.length * framings;
+}
+
+export function generatedCount(recipe: GeneratedRecipe): number {
+  return generatedVariantCount(recipe) + recipe.authored.length + curatedPromptCount(recipe.gameId);
 }
 
 export function totalCatalogueSize(): number {
@@ -109,13 +118,18 @@ export interface CatalogueAudit {
     noRepeatSelection: 'covered-by-selector-tests';
     pairSpecificHistory: 'not-synchronized-between-devices';
   };
-  games: Record<string, { generated: number; validUnique: number }>;
+  games: Record<string, {
+    generated: number;
+    validUnique: number;
+    byIntensity: Record<IntensityLevel, { generated: number; validUnique: number }>;
+  }>;
 }
 
 export function auditCatalogue(): CatalogueAudit {
   const seenIds = new Set<string>();
   const seenExact = new Set<string>();
   const seenPrompts = new Set<string>();
+  const seenGroups = new Map<string, string>();
   const fingerprints: string[] = [];
   const fingerprintIds: string[] = [];
   const tokenIndex = new Map<string, number[]>();
@@ -141,8 +155,15 @@ export function auditCatalogue(): CatalogueAudit {
 
   Object.values(RECIPES).forEach((recipe) => {
     let gameValidUnique = 0;
+    const byIntensity: CatalogueAudit['games'][string]['byIntensity'] = {
+      mild: { generated: 0, validUnique: 0 },
+      moderate: { generated: 0, validUnique: 0 },
+      spicy: { generated: 0, validUnique: 0 },
+      extreme: { generated: 0, validUnique: 0 },
+    };
     const accept = (card: ContentCard) => {
       generatedExperiences += 1;
+      byIntensity[card.intensity].generated += 1;
       if (seenIds.has(card.id)) {
         duplicateIds += 1;
         if (examples.duplicateIds.length < 20) {
@@ -162,6 +183,13 @@ export function auditCatalogue(): CatalogueAudit {
         && typeof card.prompt === 'string' && card.prompt.trim()
         && typeof card.theme === 'string' && card.theme.trim()
         && typeof card.language === 'string' && card.language.trim()
+        && typeof card.contentRating === 'string' && card.contentRating.trim()
+        && typeof card.normalizedText === 'string' && card.normalizedText.trim()
+        && typeof card.contentFingerprint === 'string' && card.contentFingerprint.trim()
+        && typeof card.similarityGroup === 'string' && card.similarityGroup.trim()
+        && typeof card.templateFingerprint === 'string' && card.templateFingerprint.trim()
+        && typeof card.originalSource === 'string' && card.originalSource.trim()
+        && typeof card.createdAt === 'string' && card.createdAt.trim()
         && typeof card.contentVersion === 'string' && card.contentVersion.trim()
         && typeof card.similarityFingerprint === 'string' && card.similarityFingerprint.trim()
         && Array.isArray(card.tags) && card.tags.length > 0
@@ -179,7 +207,7 @@ export function auditCatalogue(): CatalogueAudit {
       }
       if (!card.eligibility.privateBuild) return;
 
-      const normalizedPrompt = fingerprint(card.prompt);
+      const normalizedPrompt = card.normalizedText;
       if (seenPrompts.has(normalizedPrompt)) {
         duplicateNormalizedPrompts += 1;
         if (examples.duplicatePrompts.length < 20) {
@@ -193,16 +221,28 @@ export function auditCatalogue(): CatalogueAudit {
         seenPrompts.add(normalizedPrompt);
       }
 
-      const exact = `${card.prompt.trim().toLowerCase()}|${(card.answerChoices ?? [])
-        .map((choice) => choice.trim().toLowerCase())
-        .join('|')}`;
+      const exact = card.normalizedText;
       if (seenExact.has(exact)) {
         exactDuplicateExperiences += 1;
         return;
       }
       seenExact.add(exact);
 
-      const terms = card.similarityFingerprint.split(' ').filter(Boolean);
+      const groupMatch = seenGroups.get(card.similarityGroup);
+      if (groupMatch && groupMatch !== card.id) {
+        nearDuplicateExperiences += 1;
+        if (examples.nearDuplicates.length < 20) {
+          examples.nearDuplicates.push({
+            id: card.id,
+            similarTo: groupMatch,
+            similarity: 1,
+          });
+        }
+        return;
+      }
+      seenGroups.set(card.similarityGroup, card.id);
+
+      const terms = card.contentFingerprint.split(' ').filter(Boolean);
       const postings = terms
         .map((term) => tokenIndex.get(term))
         .filter((entries): entries is number[] => entries !== undefined)
@@ -230,7 +270,7 @@ export function auditCatalogue(): CatalogueAudit {
       }
 
       const index = fingerprints.length;
-      fingerprints.push(card.similarityFingerprint);
+      fingerprints.push(card.contentFingerprint);
       fingerprintIds.push(card.id);
       terms.forEach((term) => {
         const entries = tokenIndex.get(term);
@@ -239,17 +279,19 @@ export function auditCatalogue(): CatalogueAudit {
       });
       validUniqueExperiences += 1;
       gameValidUnique += 1;
+      byIntensity[card.intensity].validUnique += 1;
     };
 
     recipe.authored.forEach((authored) => accept(finalize(recipe, authored)));
-    const generatedCountWithoutAuthored = generatedCount(recipe) - recipe.authored.length;
-    for (let index = 0; index < generatedCountWithoutAuthored; index += 1) {
+    curatedPromptsForGame(recipe.gameId).forEach((authored) => accept(finalize(recipe, authored, 'curated')));
+    for (let index = 0; index < generatedVariantCount(recipe); index += 1) {
       const card = cardFromIndex(recipe, index);
       if (card) accept(card);
     }
     games[recipe.gameId] = {
       generated: generatedCount(recipe),
       validUnique: gameValidUnique,
+      byIntensity,
     };
   });
 
@@ -276,22 +318,27 @@ export function auditCatalogue(): CatalogueAudit {
 }
 
 function eligibleIntensity(cardLevel: IntensityLevel, selected: IntensityLevel): boolean {
-  return INTENSITY_RANK[cardLevel] <= INTENSITY_RANK[selected];
+  return INTENSITY_RANK[cardLevel] === INTENSITY_RANK[selected];
 }
 
 function mentionsExcluded(text: string, tags: string[], excluded: string[]): boolean {
-  const haystack = `${text} ${tags.join(' ')}`.toLowerCase();
-  return excluded.some((topic) => topic.trim() && haystack.includes(topic.trim().toLowerCase()));
+  const haystack = ` ${normalizeContentText(`${text} ${tags.join(' ')}`)} `;
+  return excluded.some((topic) => {
+    const normalizedTopic = normalizeContentText(topic);
+    return normalizedTopic && haystack.includes(` ${normalizedTopic} `);
+  });
 }
 
 function finalize(
   recipe: GeneratedRecipe,
   draft: AuthoredPrompt,
+  source: 'authored' | 'curated' | 'generated' = 'authored',
 ): ContentCard {
   const fullText = draft.choices && draft.choices.length > 0
     ? `${draft.prompt} ${draft.choices.join(' ')}`
     : draft.prompt;
   const fp = fingerprint(fullText) || draft.id;
+  const normalizedText = normalizeContentText(fullText);
   const sexual = recipe.mood === 'sexual';
   const extreme = draft.intensity === 'extreme';
   return {
@@ -300,10 +347,21 @@ function finalize(
     gameId: recipe.gameId,
     mood: recipe.mood,
     intensity: draft.intensity,
+    contentRating: draft.rating ?? (extreme ? '18-plus' : 'pg13-style'),
     language: 'English',
     theme: draft.theme,
     tags: draft.tags,
     prompt: draft.prompt,
+    normalizedText,
+    contentFingerprint: fp,
+    similarityGroup: draft.similarityGroup ?? fp,
+    templateFingerprint: draft.templateFingerprint ?? fingerprint(draft.prompt),
+    originalSource: source === 'curated'
+      ? 'src/content/curated-pools.ts'
+      : source === 'generated'
+        ? `procedural:${recipe.gameId}`
+        : 'src/content/recipes.ts',
+    createdAt: APP_CONFIG.contentPackCreatedAt,
     answerType: recipe.answerType,
     answerChoices: draft.choices,
     contentVersion: APP_CONFIG.contentPackVersion,
@@ -332,7 +390,7 @@ function cardFromIndex(recipe: GeneratedRecipe, index: number): ContentCard | nu
           tags: ['choice'],
           prompt: 'Would you rather…',
           choices: [recipe.topics[i], recipe.topics[j]],
-        });
+        }, 'generated');
       }
       remaining -= row;
     }
@@ -348,7 +406,7 @@ function cardFromIndex(recipe: GeneratedRecipe, index: number): ContentCard | nu
       intensity: index % 5 === 0 ? 'spicy' : 'moderate',
       tags: ['fantasy', 'combo'],
       prompt: combo.prompt,
-    });
+    }, 'generated');
   }
 
   if (recipe.gameId === 'whos-more-likely') {
@@ -360,7 +418,7 @@ function cardFromIndex(recipe: GeneratedRecipe, index: number): ContentCard | nu
       tags: ['vote'],
       prompt: `Who is more likely to be the one who ${recipe.topics[index]}?`,
       choices: ['Player 1', 'Player 2'],
-    });
+    }, 'generated');
   }
 
   const framingCount = Math.max(recipe.framings.length, 1);
@@ -384,7 +442,7 @@ function cardFromIndex(recipe: GeneratedRecipe, index: number): ContentCard | nu
     tags: [topic, recipe.mood],
     prompt,
     choices: choiceSet?.map((choice) => choice.replaceAll('{topic}', topic)),
-  });
+  }, 'generated');
 }
 
 export function fantasyAt(index: number): { id: string; prompt: string } | null {
@@ -415,8 +473,12 @@ function allowed(card: ContentCard, request: SelectRequest): boolean {
   return true;
 }
 
-function createSimilarityMatcher(fingerprints: string[]): (candidate: string) => boolean {
+function createSimilarityMatcher(
+  fingerprints: string[],
+  similarityGroups: string[] = [],
+): (candidate: string, group?: string) => boolean {
   const exact = new Set(fingerprints);
+  const groups = new Set(similarityGroups);
   const tokenIndex = new Map<string, number[]>();
   const tokenSets = fingerprints.map((fingerprint, index) => {
     const terms = new Set(fingerprint.split(' ').filter(Boolean));
@@ -428,8 +490,8 @@ function createSimilarityMatcher(fingerprints: string[]): (candidate: string) =>
     return terms;
   });
 
-  return (candidate) => {
-    if (exact.has(candidate)) return true;
+  return (candidate, group) => {
+    if (exact.has(candidate) || Boolean(group && groups.has(group))) return true;
     const candidateTerms = new Set(candidate.split(' ').filter(Boolean));
     const candidateLists = Array.from(candidateTerms)
       .map((term) => tokenIndex.get(term))
@@ -453,35 +515,51 @@ function createSimilarityMatcher(fingerprints: string[]): (candidate: string) =>
   };
 }
 
-export function isTooSimilar(card: ContentCard, fingerprints: string[]): boolean {
-  return createSimilarityMatcher(fingerprints)(card.similarityFingerprint);
+export function isTooSimilar(card: ContentCard, fingerprints: string[], similarityGroups: string[] = []): boolean {
+  return createSimilarityMatcher(fingerprints, similarityGroups)(
+    card.contentFingerprint ?? card.similarityFingerprint,
+    card.similarityGroup,
+  );
+}
+
+export function contentCardsForGame(gameId: string): ContentCard[] {
+  const recipe = RECIPES[gameId];
+  if (!recipe) return [];
+  const cards = [
+    ...recipe.authored.map((draft) => finalize(recipe, draft)),
+    ...curatedPromptsForGame(gameId).map((draft) => finalize(recipe, draft, 'curated')),
+  ];
+  for (let index = 0; index < generatedVariantCount(recipe); index += 1) {
+    const card = cardFromIndex(recipe, index);
+    if (card) cards.push(card);
+  }
+  return cards;
 }
 
 export function selectNext(request: SelectRequest): SelectResult {
   const recipe = RECIPES[request.gameId];
   if (!recipe) return { ok: false, reason: 'This game has no content pack yet.' };
   const seen = new Set(request.history);
-  const hasSimilarHistory = createSimilarityMatcher(request.fingerprints);
+  const hasSimilarHistory = createSimilarityMatcher(request.fingerprints, request.similarityGroups);
   const pool: ContentCard[] = [];
 
   const consider = (card: ContentCard | null) => {
-    if (!card || seen.has(card.id) || !allowed(card, request) || hasSimilarHistory(card.similarityFingerprint)) return;
+    if (!card || seen.has(card.id) || !allowed(card, request)
+      || hasSimilarHistory(card.contentFingerprint, card.similarityGroup)) return;
     pool.push(card);
   };
 
   recipe.authored.forEach((authored) => consider(finalize(recipe, authored)));
-  if (pool.length === 0) {
-    const total = generatedCount(recipe);
-    for (let index = 0; index < total && pool.length < 24; index += 1) {
-      consider(cardFromIndex(recipe, index));
-    }
+  curatedPromptsForGame(recipe.gameId).forEach((authored) => consider(finalize(recipe, authored, 'curated')));
+  for (let index = 0; index < generatedVariantCount(recipe) && pool.length < 24; index += 1) {
+    consider(cardFromIndex(recipe, index));
   }
 
   if (pool.length === 0) {
     return {
       ok: false,
       reason:
-        'Every eligible card in this pack has been played or is too similar to one you have already seen. Load another content pack before repeating anything.',
+        `No new ${request.intensity} experience remains for this game under the current boundaries. Choose another game, explicitly change intensity, or load a validated content pack.`,
     };
   }
 
@@ -489,16 +567,18 @@ export function selectNext(request: SelectRequest): SelectResult {
   return { ok: true, card };
 }
 
-export function selectMany(request: SelectRequest, count: number): SelectResult[] | { ok: false; reason: string } {
+export function selectMany(request: SelectRequest, count: number): SuccessfulSelection[] | { ok: false; reason: string } {
   const history = [...request.history];
   const fingerprints = [...request.fingerprints];
-  const cards: SelectResult[] = [];
+  const similarityGroups = [...(request.similarityGroups ?? [])];
+  const cards: SuccessfulSelection[] = [];
   for (let i = 0; i < count; i += 1) {
-    const next = selectNext({ ...request, history, fingerprints });
+    const next = selectNext({ ...request, history, fingerprints, similarityGroups });
     if (!next.ok) return next;
     cards.push(next);
     history.push(next.card.id);
-    fingerprints.push(next.card.similarityFingerprint);
+    fingerprints.push(next.card.contentFingerprint);
+    similarityGroups.push(next.card.similarityGroup);
   }
   return cards;
 }

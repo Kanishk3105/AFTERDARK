@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { db } from '@/data/db';
-import { GameSession, MoodId, PlayMode, IntensityLevel } from '@/types';
+import { db, type EncounterStatus } from '@/data/db';
+import type { ContentCard, GameSession, MoodId, PlayMode, IntensityLevel } from '@/types';
 
 export interface RecentSession {
   id: string;
@@ -23,6 +23,7 @@ interface GameState {
   activeSession: GameSession | null;
   cardHistory: string[];
   fingerprints: string[];
+  similarityGroups: string[];
   sessionsPlayed: number;
   uniqueGamesPlayed: string[];
   moodsExplored: MoodId[];
@@ -42,13 +43,19 @@ interface GameState {
   revealRound: (roundIndex: number) => void;
   nextTurn: () => void;
   endSession: () => void;
-  recordCardEncountered: (cardId: string, fingerprint?: string, gameId?: string) => void;
+  recordCardEncountered: (
+    card: ContentCard,
+    sessionId: string,
+    status?: EncounterStatus,
+    persist?: boolean,
+  ) => boolean;
+  updateCardEncounterStatus: (cardId: string, status: EncounterStatus) => Promise<void>;
   isCardEncountered: (cardId: string) => boolean;
   clearHistory: () => Promise<void>;
   patchSession: (partial: Partial<GameSession>) => void;
   setEngine: (engine: unknown) => void;
   saveMemory: (prompt: string, note: string) => void;
-  replaceHistory: (ids: string[], fingerprints: string[]) => void;
+  replaceHistory: (ids: string[], fingerprints: string[], similarityGroups: string[]) => void;
 }
 
 export const useGameStore = create<GameState>()(
@@ -57,6 +64,7 @@ export const useGameStore = create<GameState>()(
       activeSession: null,
       cardHistory: [],
       fingerprints: [],
+      similarityGroups: [],
       sessionsPlayed: 0,
       uniqueGamesPlayed: [],
       moodsExplored: [],
@@ -267,23 +275,46 @@ export const useGameStore = create<GameState>()(
         set({ savedMemories: [memory, ...get().savedMemories].slice(0, 50) });
       },
 
-      replaceHistory: (ids, fingerprints) => set({ cardHistory: ids, fingerprints }),
+      replaceHistory: (ids, fingerprints, similarityGroups) => set({
+        cardHistory: ids,
+        fingerprints,
+        similarityGroups,
+      }),
 
-      recordCardEncountered: (cardId, fingerprint, gameId = 'any') => {
+      recordCardEncountered: (card, sessionId, status = 'shown', persistRecord = true) => {
         const current = get().cardHistory;
         const prints = get().fingerprints;
-        if (!current.includes(cardId)) {
-          set({
-            cardHistory: [...current, cardId],
-            fingerprints: fingerprint ? [...prints, fingerprint] : prints,
-          });
+        const groups = get().similarityGroups;
+        if (current.includes(card.id)) return false;
+        set({
+          cardHistory: [...current, card.id],
+          fingerprints: [...prints, card.contentFingerprint],
+          similarityGroups: [...groups, card.similarityGroup],
+        });
+        if (persistRecord) {
           void db.history.put({
-            id: cardId,
-            fingerprint: fingerprint ?? '',
-            gameId,
+            id: card.id,
+            fingerprint: card.contentFingerprint,
+            gameId: card.gameId,
+            moodId: card.mood,
+            intensity: card.intensity,
+            contentRating: card.contentRating,
+            sessionId,
+            status,
+            normalizedText: card.normalizedText,
+            similarityGroup: card.similarityGroup,
+            contentVersion: card.contentVersion,
             seenAt: new Date().toISOString(),
+          }).catch((error: unknown) => {
+            console.error('Persisting content encounter failed', error);
           });
         }
+        return true;
+      },
+
+      updateCardEncounterStatus: async (cardId, status) => {
+        const changed = await db.history.update(cardId, { status });
+        if (changed === 0) throw new Error(`Content encounter ${cardId} is missing from the local ledger.`);
       },
 
       isCardEncountered: (cardId) => {
@@ -291,7 +322,7 @@ export const useGameStore = create<GameState>()(
       },
 
       clearHistory: async () => {
-        set({ cardHistory: [], fingerprints: [] });
+        set({ cardHistory: [], fingerprints: [], similarityGroups: [] });
         await db.history.clear();
       },
     }),

@@ -1,6 +1,7 @@
 export type PlayMode = 'pass-and-play' | 'nearby' | 'anywhere';
 export type MoodId = 'platonic' | 'romantic' | 'sexual' | 'fantasy';
 export type IntensityLevel = 'mild' | 'moderate' | 'spicy' | 'extreme';
+export type ContentRating = 'pg13-style' | '18-plus';
 export type CoupleConfig = 'mf' | 'mm' | 'ff' | 'other';
 export type ChallengeState = 'pending' | 'accepted' | 'completed' | 'swapped' | 'passed' | 'paused';
 export type TwistLevel = 'easy' | 'adventure' | 'five-step';
@@ -40,10 +41,17 @@ export interface ContentCard {
   gameId: string;
   mood: MoodId;
   intensity: IntensityLevel;
+  contentRating: ContentRating;
   language: string;
   theme: string;
   tags: string[];
   prompt: string;
+  normalizedText: string;
+  contentFingerprint: string;
+  similarityGroup: string;
+  templateFingerprint: string;
+  originalSource: string;
+  createdAt: string;
   answerType: 'mcq' | 'open-text' | 'prediction' | 'boolean' | 'ranking' | 'emoji';
   answerChoices?: string[];
   followUp?: string;

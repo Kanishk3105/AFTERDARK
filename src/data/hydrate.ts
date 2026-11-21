@@ -17,9 +17,18 @@ export async function hydrate(): Promise<void> {
       const local = useGameStore.getState();
       const ids = Array.from(new Set([...local.cardHistory, ...history.map((item) => item.id)]));
       const prints = Array.from(
-        new Set([...local.fingerprints, ...history.map((item) => item.fingerprint).filter(Boolean)]),
+        new Set([
+          ...local.fingerprints,
+          ...history.map((item) => item.fingerprint).filter(Boolean),
+        ]),
       );
-      local.replaceHistory(ids, prints);
+      const groups = Array.from(
+        new Set([
+          ...local.similarityGroups,
+          ...history.map((item) => item.similarityGroup).filter((group): group is string => Boolean(group)),
+        ]),
+      );
+      local.replaceHistory(ids, prints, groups);
     }
   } catch (error) {
     console.error('Local database unavailable', error);

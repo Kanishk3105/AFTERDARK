@@ -24,7 +24,8 @@ export const APP_CONFIG = {
    * without renaming or deleting the category.
    */
   distribution: 'private' as 'private' | 'public',
-  contentPackVersion: '2026.11.1',
+  contentPackVersion: '2026.11.2',
+  contentPackCreatedAt: '2026-11-22T01:11:21+05:30',
 } as const;
 
 export const COLORS = {
@@ -82,7 +83,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 10,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['MCQ', 'Predictions', 'Score tracking', 'Match percentage'],
       },
       {
@@ -94,7 +95,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 15,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Private answers', 'Simultaneous reveal', 'Score tracking'],
       },
       {
@@ -106,7 +107,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 10,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Two choices', 'Custom answers', 'Alternating turns'],
       },
       {
@@ -118,7 +119,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 10,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Secret voting', 'Simultaneous reveal', 'Agreement tracking'],
       },
     ],
@@ -141,7 +142,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 15,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['MCQ', 'Open text', 'Predictions'],
       },
       {
@@ -153,7 +154,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 15,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Shared memories', 'Compare answers', 'Save memories'],
       },
       {
@@ -165,7 +166,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 10,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Five love languages', 'Fun exploration', 'Comparison'],
       },
       {
@@ -177,7 +178,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 20,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Activities', 'Mutual acceptance', 'Completion tracking'],
       },
       {
@@ -189,7 +190,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 5,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Animated wheel', 'Randomized activities', 'Fun reveals'],
       },
     ],
@@ -272,7 +273,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 10,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Emoji sequences', 'Partner guesses', 'Fun reveals'],
       },
     ],
@@ -319,7 +320,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 10,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Private ranking', 'Comparison reveal', 'Matching insights'],
       },
       {
@@ -331,7 +332,7 @@ export const MOODS: MoodConfig[] = [
         minPlayers: 2,
         maxPlayers: 2,
         estimatedMinutes: 15,
-        hasIntensityLevels: false,
+        hasIntensityLevels: true,
         features: ['Same challenge', 'Simultaneous play', 'Score tracking'],
       },
       {

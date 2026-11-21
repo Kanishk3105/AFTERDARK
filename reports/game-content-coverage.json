@@ -1,0 +1,338 @@
+[
+  {
+    "gameId": "six-questions",
+    "mood": "platonic",
+    "gameplayImplementation": "Six-round answer, prediction, reveal, and local scoring flow.",
+    "existingContentCount": 966,
+    "byIntensity": {
+      "mild": 483,
+      "moderate": 481,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection before each round or story opening; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "how-well-do-you-know-me",
+    "mood": "platonic",
+    "gameplayImplementation": "Shared answer/guess flow; no separate game engine.",
+    "existingContentCount": 485,
+    "byIntensity": {
+      "mild": 242,
+      "moderate": 241,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection before each round or story opening; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "would-you-rather",
+    "mood": "platonic",
+    "gameplayImplementation": "Private pass-and-play choice, optional custom choice, reveal, and scoring.",
+    "existingContentCount": 124,
+    "byIntensity": {
+      "mild": 121,
+      "moderate": 1,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection before each round or story opening; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "whos-more-likely",
+    "mood": "platonic",
+    "gameplayImplementation": "Private pass-and-play votes, reveal, and player-name attribution.",
+    "existingContentCount": 16,
+    "byIntensity": {
+      "mild": 13,
+      "moderate": 1,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection before each round or story opening; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "love-quiz",
+    "mood": "romantic",
+    "gameplayImplementation": "Dedicated private preference choice and reveal.",
+    "existingContentCount": 491,
+    "byIntensity": {
+      "mild": 242,
+      "moderate": 241,
+      "spicy": 4,
+      "extreme": 4
+    },
+    "selectionLogic": "Atomic four-card reservation batch; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "memory-lane",
+    "mood": "romantic",
+    "gameplayImplementation": "Two private local submissions, gated reveal, optional saved note.",
+    "existingContentCount": 25,
+    "byIntensity": {
+      "mild": 22,
+      "moderate": 1,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "love-language",
+    "mood": "romantic",
+    "gameplayImplementation": "Private five-item ranking, unique-rank validation, reveal, and match scoring.",
+    "existingContentCount": 9,
+    "byIntensity": {
+      "mild": 6,
+      "moderate": 1,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "couple-challenges",
+    "mood": "romantic",
+    "gameplayImplementation": "Mutual acceptance, pause/resume, decline, and shared completion.",
+    "existingContentCount": 12,
+    "byIntensity": {
+      "mild": 5,
+      "moderate": 5,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "romantic-roulette",
+    "mood": "romantic",
+    "gameplayImplementation": "Random eligible prompt spin with local result persistence.",
+    "existingContentCount": 12,
+    "byIntensity": {
+      "mild": 9,
+      "moderate": 1,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection on each roulette spin; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "truth-or-dare",
+    "mood": "sexual",
+    "gameplayImplementation": "Turn-based reducer with consent actions, strikes, alternatives, and five-step state.",
+    "existingContentCount": 126,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 41,
+      "spicy": 44,
+      "extreme": 40
+    },
+    "selectionLogic": "Atomic exact-intensity selection before each round or story opening; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "desire-match",
+    "mood": "sexual",
+    "gameplayImplementation": "Private yes/maybe/no choices with reveal.",
+    "existingContentCount": 30,
+    "byIntensity": {
+      "mild": 4,
+      "moderate": 11,
+      "spicy": 11,
+      "extreme": 4
+    },
+    "selectionLogic": "Atomic four-card reservation batch; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "naughty-roulette",
+    "mood": "sexual",
+    "gameplayImplementation": "Random eligible prompt spin with local result persistence.",
+    "existingContentCount": 24,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 8,
+      "spicy": 8,
+      "extreme": 7
+    },
+    "selectionLogic": "Atomic exact-intensity selection on each roulette spin; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "temptations",
+    "mood": "sexual",
+    "gameplayImplementation": "User-authored four-choice challenge with partner approval or decline.",
+    "existingContentCount": 24,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 1,
+      "spicy": 21,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "desire-quiz",
+    "mood": "sexual",
+    "gameplayImplementation": "Dedicated private choice and reveal.",
+    "existingContentCount": 91,
+    "byIntensity": {
+      "mild": 4,
+      "moderate": 29,
+      "spicy": 30,
+      "extreme": 28
+    },
+    "selectionLogic": "Atomic four-card reservation batch; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "emoji-confessions",
+    "mood": "sexual",
+    "gameplayImplementation": "Emoji composition, private interpretation, guess, and gated reveal.",
+    "existingContentCount": 16,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 7,
+      "spicy": 7,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "fantasy-cards",
+    "mood": "fantasy",
+    "gameplayImplementation": "Private scenario interest choices and reveal.",
+    "existingContentCount": 34,
+    "byIntensity": {
+      "mild": 4,
+      "moderate": 13,
+      "spicy": 13,
+      "extreme": 4
+    },
+    "selectionLogic": "Atomic four-card reservation batch; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "scenario-builder",
+    "mood": "fantasy",
+    "gameplayImplementation": "Editable scenario fields with partner approval or decline.",
+    "existingContentCount": 16,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 13,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "the-menu",
+    "mood": "fantasy",
+    "gameplayImplementation": "Private independent rankings, duplicate-rank rejection, reveal, and scoring.",
+    "existingContentCount": 16,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 13,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "challenge-duel",
+    "mood": "fantasy",
+    "gameplayImplementation": "Private submissions with reveal after both players submit.",
+    "existingContentCount": 16,
+    "byIntensity": {
+      "mild": 7,
+      "moderate": 7,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic opening-prompt selection; exact intensity; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "choose-your-story",
+    "mood": "fantasy",
+    "gameplayImplementation": "Local branching story with saved current node.",
+    "existingContentCount": 5,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 2,
+      "spicy": 1,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection before each round or story opening; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  },
+  {
+    "gameId": "fantasy-roulette",
+    "mood": "fantasy",
+    "gameplayImplementation": "Randomly generated setting, atmosphere, theme, and direction.",
+    "existingContentCount": 16644,
+    "byIntensity": {
+      "mild": 1,
+      "moderate": 13313,
+      "spicy": 3329,
+      "extreme": 1
+    },
+    "selectionLogic": "Atomic exact-intensity selection on each roulette spin; shared exclusions and global local history.",
+    "historyIntegration": "Global local Dexie ID/fingerprint/group ledger with session, mood, intensity, timestamp, and status; no pair synchronization. Exact-intensity selection is serialized with idempotent request keys.",
+    "boundaryIntegration": "Shared excluded topics and game-specific consent actions where implemented; per-player limits and effective pair maximum are not implemented.",
+    "automatedTestCoverage": "All 84 pool combinations, metadata, atomic concurrent selection, cross-game/intensity fingerprint blocking, retries, restart recovery, and exhaustion are tested; game-specific UI and remote recovery remain incomplete."
+  }
+]
