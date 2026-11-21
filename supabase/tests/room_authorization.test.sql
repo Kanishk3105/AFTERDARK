@@ -410,6 +410,9 @@ select is(
   0::bigint,
   'deletion immediately removes registered push tokens'
 );
+update public.room_deletion_jobs
+set created_at = now() - interval '5 minutes'
+where id = current_setting('afterdark.test.deletion_job')::uuid;
 select is(
   (select count(*) from public.claim_room_deletion_jobs(1)
    where job_id = current_setting('afterdark.test.deletion_job')::uuid),
