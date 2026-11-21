@@ -149,6 +149,7 @@ select public.complete_media_view(
   '20000000-0000-4000-8000-000000000002',
   '30000000-0000-4000-8000-000000000002'
 );
+set local role service_role;
 select ok(
   (select expires_at > now() and expires_at <= now() + interval '5 seconds'
    from public.media_records
@@ -156,6 +157,7 @@ select ok(
      and viewed_at is not null),
   'server starts the five-second timer on first view'
 );
+set local role authenticated;
 select pg_sleep(5.1);
 select throws_ok(
   $$select * from public.claim_media_view('20000000-0000-4000-8000-000000000002')$$,

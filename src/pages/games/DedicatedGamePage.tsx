@@ -4,14 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { useToast } from '@/components/ui/Toast';
 import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
 import { awardCompletion } from '@/games/awards';
 import {
+  createMenu,
   createPreferenceModel,
+  isMenuModel,
   nextPreferenceRound,
+  revealMenu,
   revealAndAdvancePreferenceRound,
+  setMenuRank,
+  submitMenuRanking,
   submitPrivateChoice,
+  type MenuModel,
 } from '@/games/dedicated';
 import { EMOJI_DECK } from '@/content/recipes';
 import type { PreferenceChoice } from '@/games/dedicated';
@@ -23,11 +30,23 @@ interface Props {
 
 export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const playerName = useAppStore((s) => s.playerName) || 'Player 1';
   const partnerName = useAppStore((s) => s.partnerName) || 'Player 2';
+  const activeSession = useGameStore((s) => s.activeSession);
   const patchSession = useGameStore((s) => s.patchSession);
   const endSession = useGameStore((s) => s.endSession);
-  const [phase, setPhase] = useState<'prompt' | 'answer-a' | 'handoff-b' | 'answer-b' | 'reveal' | 'finished'>('prompt');
+  const [menu, setMenu] = useState<MenuModel>(() =>
+    isMenuModel(activeSession?.engine)
+      ? activeSession.engine
+      : createMenu(['Slow evening', 'Adventure', 'Deep conversation', 'Playful challenge']),
+  );
+  const [phase, setPhase] = useState<'prompt' | 'answer-a' | 'handoff-b' | 'answer-b' | 'reveal' | 'finished'>(() => {
+    if (!isMenuModel(activeSession?.engine)) return 'prompt';
+    if (activeSession.engine.revealed) return 'reveal';
+    if (activeSession.engine.submitted[0]) return 'handoff-b';
+    return 'prompt';
+  });
   const [preference, setPreference] = useState(() =>
     createPreferenceModel(gameId, ['Which pace feels right tonight?', 'What kind of attention feels best?', 'What boundary matters most?', 'What would feel exciting but safe?']),
   );
@@ -43,7 +62,8 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
     boundary: 'Nothing without an explicit yes',
   });
 
-  const isPrivateChoice = ['love-quiz', 'love-language', 'desire-match', 'desire-quiz', 'fantasy-cards', 'the-menu'].includes(gameId);
+  const isMenu = gameId === 'the-menu';
+  const isPrivateChoice = ['love-quiz', 'love-language', 'desire-match', 'desire-quiz', 'fantasy-cards'].includes(gameId);
   const isDuel = ['challenge-duel', 'couple-challenges', 'memory-lane', 'scenario-builder'].includes(gameId);
   const isTemptation = gameId === 'temptations';
   const isEmoji = gameId === 'emoji-confessions';
@@ -64,6 +84,29 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
   const submitB = (choice: PreferenceChoice) => {
     setAnswerB(choice);
     setPreference((model) => submitPrivateChoice(model, 'b', choice));
+    setPhase('reveal');
+  };
+
+  const submitMenu = (player: 0 | 1) => {
+    const submitted = submitMenuRanking(menu, player);
+    if (!submitted.submitted[player]) {
+      showToast('Give every option a different rank before submitting.', 'warning');
+      return;
+    }
+
+    if (player === 0) {
+      setMenu(submitted);
+      patchSession({ engine: submitted });
+      setPhase('handoff-b');
+      return;
+    }
+
+    const revealed = revealMenu(submitted);
+    setMenu(revealed);
+    patchSession({
+      engine: revealed,
+      scores: [revealed.matchingRanks, revealed.matchingRanks],
+    });
     setPhase('reveal');
   };
 
@@ -102,6 +145,12 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
           <Card variant="solid" className="p-4">
             <div className="text-xs text-ad-text-secondary">Revealed matches</div>
             <div className="font-display text-2xl text-ad-gold">{matchCount} / {preference.rounds.filter((r) => r.revealed).length}</div>
+          </Card>
+        )}
+        {isMenu && (
+          <Card variant="solid" className="p-4">
+            <div className="text-xs text-ad-text-secondary">Matching menu ranks</div>
+            <div className="font-display text-2xl text-ad-gold">{menu.matchingRanks} / {menu.items[0].length}</div>
           </Card>
         )}
         <Button fullWidth onClick={() => navigate(`/games/${moodId}`)}>Return to Games</Button>
@@ -158,6 +207,75 @@ export const DedicatedGamePage: React.FC<Props> = ({ gameId, moodId }) => {
               <Button fullWidth onClick={finishPreferenceRound}>
                 {preference.roundIndex + 1 >= preference.rounds.length ? 'Finish Results' : 'Next Round'}
               </Button>
+            </Card>
+          )}
+        </>
+      )}
+
+      {isMenu && (
+        <>
+          {phase === 'prompt' && (
+            <Card variant="glass" className="p-6 space-y-4 text-center">
+              <h2 className="font-display text-xl">Rank what sounds most appealing</h2>
+              <p className="text-xs text-ad-text-secondary">
+                Each partner ranks privately. Compare only after both submit.
+              </p>
+              <Button fullWidth onClick={() => setPhase('answer-a')}>Start private ranking</Button>
+            </Card>
+          )}
+          {(phase === 'answer-a' || phase === 'answer-b') && (() => {
+            const player: 0 | 1 = phase === 'answer-a' ? 0 : 1;
+            const name = player === 0 ? playerName : partnerName;
+            const rankedItems = menu.items[player];
+            return (
+              <Card variant="glass" className="p-5 space-y-4">
+                <h2 className="font-display text-lg text-center">{name}, rank privately</h2>
+                <p className="text-[10px] text-ad-text-secondary text-center">1 is your first choice.</p>
+                {rankedItems.map((item) => (
+                  <label key={item.id} className="flex items-center justify-between gap-3 text-xs">
+                    <span>{item.label}</span>
+                    <select
+                      value={item.rank + 1}
+                      onChange={(event) => {
+                        const next = setMenuRank(menu, player, item.id, Number(event.target.value) - 1);
+                        setMenu(next);
+                        patchSession({ engine: next });
+                      }}
+                      className="rounded-lg border border-ad-burgundy/40 bg-ad-bg-secondary px-2 py-1"
+                    >
+                      {rankedItems.map((rankedItem) => (
+                        <option key={rankedItem.id} value={rankedItem.rank + 1}>
+                          {rankedItem.rank + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+                <Button fullWidth onClick={() => submitMenu(player)}>Submit privately</Button>
+              </Card>
+            );
+          })()}
+          {phase === 'handoff-b' && (
+            <Card variant="glass" className="p-6 space-y-4 text-center">
+              <h2 className="font-display text-xl">Pass to {partnerName}</h2>
+              <p className="text-xs text-ad-text-secondary">The first ranking stays hidden until both are submitted.</p>
+              <Button fullWidth onClick={() => setPhase('answer-b')}>Start partner ranking</Button>
+            </Card>
+          )}
+          {phase === 'reveal' && (
+            <Card variant="glass" className="p-5 space-y-4">
+              <h2 className="font-display text-lg text-center">Compare your menus</h2>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[menu.items[0], menu.items[1]].map((items, player) => (
+                  <div key={player}>
+                    <h3 className="mb-2 text-ad-gold">{player === 0 ? playerName : partnerName}</h3>
+                    {[...items].sort((a, b) => a.rank - b.rank).map((item) => (
+                      <div key={item.id} className="py-1">{item.rank + 1}. {item.label}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <Button fullWidth onClick={finishGame}>Finish Results</Button>
             </Card>
           )}
         </>

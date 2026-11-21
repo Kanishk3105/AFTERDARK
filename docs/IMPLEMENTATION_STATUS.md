@@ -28,7 +28,7 @@ reconnection, or synchronized answer privacy.
 | Sexual | Emoji Confessions | Local emoji composition; partner interpretation/guess and reveal are not implemented. |
 | Fantasy | Fantasy Cards | Local private yes/maybe/no selection and reveal. No remote privacy or game UI test. |
 | Fantasy | Scenario Builder | Shared editable fields; a separate partner approval step and persistence are missing. |
-| Fantasy | The Menu | Uses yes/maybe/no choices; independent ranking and comparison are not wired into the page. |
+| Fantasy | The Menu | Independent private rankings, duplicate-rank rejection, simultaneous reveal, match scoring and local session persistence are wired. Remote privacy, reconnect behavior and component tests are not implemented. |
 | Fantasy | Challenge Duel | Shared single-textarea form; two private submissions, reveal gating and scoring are not implemented in the page. |
 | Fantasy | Choose Your Story | One branching story; current node is saved to the local game session. No two-player turn synchronization or story-flow test. |
 | Fantasy | Fantasy Roulette | Generates setting/atmosphere/theme/direction combinations. No durable room history or cross-device no-repeat verification. |

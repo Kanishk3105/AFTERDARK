@@ -108,6 +108,26 @@ export interface MenuModel {
   matchingRanks: number;
 }
 
+export function isMenuModel(value: unknown): value is MenuModel {
+  if (!value || typeof value !== 'object') return false;
+  const model = value as Record<string, unknown>;
+  const isRankedItem = (item: unknown): item is RankedItem => {
+    if (!item || typeof item !== 'object') return false;
+    const rankedItem = item as Record<string, unknown>;
+    return typeof rankedItem.id === 'string'
+      && typeof rankedItem.label === 'string'
+      && Number.isInteger(rankedItem.rank);
+  };
+  return Array.isArray(model.items)
+    && model.items.length === 2
+    && model.items.every((items) => Array.isArray(items) && items.every(isRankedItem))
+    && Array.isArray(model.submitted)
+    && model.submitted.length === 2
+    && model.submitted.every((submitted) => typeof submitted === 'boolean')
+    && typeof model.revealed === 'boolean'
+    && Number.isInteger(model.matchingRanks);
+}
+
 export function createMenu(items: string[]): MenuModel {
   return {
     items: [

@@ -4,6 +4,7 @@ import {
   createChallenge,
   createMenu,
   createPreferenceModel,
+  isMenuModel,
   nextPreferenceRound,
   preferenceMatches,
   revealAndAdvancePreferenceRound,
@@ -64,9 +65,11 @@ describe('Dedicated couple game engines', () => {
 
   it('creates a private menu from ranked items', () => {
     const model = createMenu(['Slow evening', 'Adventure', 'Deep conversation']);
+    expect(isMenuModel(model)).toBe(true);
     expect(model.items[0]).toHaveLength(3);
     expect(model.items[1]).toHaveLength(3);
     expect(model.submitted).toEqual([false, false]);
+    expect(isMenuModel({ items: [], submitted: [], revealed: false, matchingRanks: 0 })).toBe(false);
   });
 
   it('keeps menu rankings private and reveals only after both unique rankings are submitted', () => {
