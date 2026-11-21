@@ -1,248 +1,220 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '@/stores/app.store';
 import { useGameStore } from '@/stores/game.store';
 import { useTrophyStore } from '@/stores/trophy.store';
 import { MOODS, APP_CONFIG } from '@/config/app.config';
-import { Card } from '@/components/ui/Card';
+import { MoodArtwork } from '@/components/branding/MoodArtwork';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { PlayMode } from '@/types';
+import type { PlayMode } from '@/types';
+
+const playModes: { id: PlayMode; label: string; icon: string; available: boolean }[] = [
+  { id: 'pass-and-play', label: 'Pass & Play', icon: '◉', available: true },
+  { id: 'nearby', label: 'Nearby', icon: '⌁', available: false },
+  { id: 'anywhere', label: 'Anywhere', icon: '◎', available: false },
+];
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-
-  const playerName = useAppStore((s) => s.playerName) || 'You';
-  const partnerName = useAppStore((s) => s.partnerName) || 'Partner';
-  const roomCode = useAppStore((s) => s.roomCode);
-  const playMode = useAppStore((s) => s.playMode);
-  const setPlayMode = useAppStore((s) => s.setPlayMode);
-
-  const activeSession = useGameStore((s) => s.activeSession);
-  const recentSessions = useGameStore((s) => s.recentSessions);
-  const sessionsPlayed = useGameStore((s) => s.sessionsPlayed);
-
-  const unlockedCount = useTrophyStore((s) => s.unlockedTrophies.length);
+  const reduceMotion = useReducedMotion();
+  const playerName = useAppStore((state) => state.playerName) || 'You';
+  const partnerName = useAppStore((state) => state.partnerName) || 'Partner';
+  const roomCode = useAppStore((state) => state.roomCode);
+  const playMode = useAppStore((state) => state.playMode);
+  const setPlayMode = useAppStore((state) => state.setPlayMode);
+  const activeSession = useGameStore((state) => state.activeSession);
+  const recentSessions = useGameStore((state) => state.recentSessions);
+  const sessionsPlayed = useGameStore((state) => state.sessionsPlayed);
+  const unlockedCount = useTrophyStore((state) => state.unlockedTrophies.length);
   const totalTrophies = 14;
 
-  const playModes: { id: PlayMode; label: string; icon: string }[] = [
-    { id: 'pass-and-play', label: 'Pass & Play', icon: '📱' },
-    { id: 'nearby', label: 'Nearby', icon: '📶' },
-    { id: 'anywhere', label: 'Anywhere', icon: '🌐' },
-  ];
+  useEffect(() => {
+    if (playMode !== 'pass-and-play') setPlayMode('pass-and-play');
+  }, [playMode, setPlayMode]);
 
   return (
-    <div className="space-y-6 px-4 pt-6 pb-4">
-      {/* Top Bar: Brand, Initials, Connection */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🌹</span>
-            <h1 className="font-display text-2xl font-extrabold tracking-[0.2em] text-gradient-gold uppercase">
-              {APP_CONFIG.name}
-            </h1>
-          </div>
-          <p className="text-[11px] text-ad-text-secondary tracking-widest font-light">
-            ROOM {roomCode ? `#${roomCode}` : 'PRIVATE'}
-          </p>
+    <div className="home-screen">
+      <header className="home-masthead">
+        <div className="home-brand">
+          <span className="home-brand-mark" aria-hidden="true">A</span>
+          <span className="home-brand-copy">
+            <span className="home-brand-name">{APP_CONFIG.name}</span>
+            <span className="home-brand-caption">A PRIVATE ROOM FOR TWO</span>
+          </span>
         </div>
-
-        {/* Couple Avatars */}
-        <div className="flex items-center -space-x-2">
-          <div className="w-9 h-9 rounded-full border-2 border-ad-gold/60 bg-ad-burgundy flex items-center justify-center text-xs font-bold text-ad-gold shadow-md">
-            {playerName.charAt(0).toUpperCase()}
-          </div>
-          <div className="w-9 h-9 rounded-full border-2 border-ad-red/60 bg-ad-bg-secondary flex items-center justify-center text-xs font-bold text-ad-text shadow-md">
-            {partnerName.charAt(0).toUpperCase()}
-          </div>
-        </div>
-      </div>
-
-      {/* Mode Selector Pill Bar */}
-      <div className="flex p-1 bg-ad-bg-secondary/70 backdrop-blur-md border border-ad-burgundy/40 rounded-xl">
-        {playModes.map((mode) => (
-          <button
-            key={mode.id}
-            type="button"
-            onClick={() => setPlayMode(mode.id)}
-            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
-              playMode === mode.id
-                ? 'bg-ad-red text-white shadow-md shadow-ad-red/30 font-semibold'
-                : 'text-ad-text-secondary hover:text-ad-text'
-            }`}
-          >
-            <span>{mode.icon}</span>
-            <span>{mode.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Continue Active Session Banner (if present) */}
-      {activeSession && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-4 rounded-2xl bg-gradient-to-r from-ad-burgundy/80 via-ad-red/40 to-ad-burgundy/80 border border-ad-gold/40 shadow-xl flex items-center justify-between"
+        <button
+          type="button"
+          className="home-settings-button"
+          onClick={() => navigate('/settings')}
+          aria-label="Open settings"
         >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3.1" />
+            <path d="M19.2 13.8a7.5 7.5 0 0 0 0-3.6l1.5-1.1-1.7-3-1.8.7a7.5 7.5 0 0 0-3.1-1.8L13.8 3h-3.6l-.3 2a7.5 7.5 0 0 0-3.1 1.8L5 6.1l-1.7 3 1.5 1.1a7.5 7.5 0 0 0 0 3.6l-1.5 1.1 1.7 3 1.8-.7a7.5 7.5 0 0 0 3.1 1.8l.3 2h3.6l.3-2a7.5 7.5 0 0 0 3.1-1.8l1.8.7 1.7-3-1.5-1.1Z" />
+          </svg>
+        </button>
+      </header>
+
+      <section className="home-hero" aria-labelledby="home-greeting">
+        <MoodArtwork mood="romantic" className="home-hero-art" />
+        <div className="home-hero-shade" />
+        <div className="home-hero-copy">
+          <p className="home-eyebrow">YOUR ROOM · YOUR RULES</p>
+          <h1 id="home-greeting">Tonight is<br /><em>just for two.</em></h1>
+          <p className="home-hero-description">
+            A little more connection, one shared moment at a time.
+          </p>
+          <div className="home-couple-chip">
+            <span className="home-connection-dot" />
+            <span>{playerName}</span>
+            <span className="home-couple-ampersand">&</span>
+            <span>{partnerName}</span>
+            <span className="home-room-divider" />
+            <span className="home-room-code">{roomCode ? `ROOM ${roomCode}` : 'YOUR PRIVATE SPACE'}</span>
+          </div>
+        </div>
+        <div className="home-hero-seal" aria-hidden="true">
+          <span>✦</span>
+          <span>FOR<br />TWO</span>
+        </div>
+      </section>
+
+      <section className="home-mode-section" aria-label="Play mode">
+        <div className="home-section-heading">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-ad-gold">
-              SESSION IN PROGRESS
-            </span>
-            <div className="font-display text-sm font-bold capitalize text-white">
-              {activeSession.gameId.replace(/-/g, ' ')}
-            </div>
-            <div className="text-[11px] text-ad-text-secondary">
-              Turn {activeSession.currentTurn + 1} · {activeSession.moodId}
-            </div>
+            <p className="home-eyebrow">HOW TO PLAY</p>
+            <h2>Choose your setting</h2>
+          </div>
+          <span className="home-local-label"><span /> ON THIS DEVICE</span>
+        </div>
+        <div className="home-mode-list">
+          {playModes.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              disabled={!mode.available}
+              aria-pressed={mode.available}
+              aria-label={mode.available ? `${mode.label}, selected` : `${mode.label}, not available yet`}
+              onClick={() => mode.available && setPlayMode(mode.id)}
+              className={`home-mode-option ${mode.available ? 'is-selected' : 'is-locked'}`}
+            >
+              <span className="home-mode-icon" aria-hidden="true">{mode.icon}</span>
+              <span className="home-mode-label">{mode.label}</span>
+              {mode.available
+                ? <span className="home-mode-check" aria-hidden="true">✓</span>
+                : <span className="home-mode-lock" aria-hidden="true">LOCKED</span>}
+            </button>
+          ))}
+        </div>
+        <p className="home-mode-note">
+          Separate-device play stays off until secure, server-authoritative sessions are ready.
+        </p>
+      </section>
+
+      {activeSession && (
+        <section className="home-resume-panel" aria-label="Continue your game">
+          <div className="home-resume-copy">
+            <p className="home-eyebrow">PICK UP WHERE YOU LEFT OFF</p>
+            <h2>{activeSession.gameId.replace(/-/g, ' ')}</h2>
+            <p>{activeSession.moodId} · Round {activeSession.currentTurn + 1}</p>
           </div>
           <Button
             size="sm"
-            variant="primary"
-            onClick={() =>
-              navigate(`/games/${activeSession.moodId}/${activeSession.gameId}/play`)
-            }
+            variant="secondary"
+            onClick={() => navigate(`/games/${activeSession.moodId}/${activeSession.gameId}/play`)}
           >
-            Resume ➔
+            Resume
           </Button>
-        </motion.div>
+        </section>
       )}
 
-      {/* FOUR LARGE MOOD CARDS */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-base font-bold tracking-wider text-ad-text uppercase">
-            Four Moods
-          </h2>
-          <span className="text-[11px] text-ad-text-secondary">
-            Select an atmosphere
-          </span>
+      <section className="home-moods-section" aria-labelledby="home-moods-heading">
+        <div className="home-section-heading">
+          <div>
+            <p className="home-eyebrow">FOUR WAYS TO CONNECT</p>
+            <h2 id="home-moods-heading">Choose your mood</h2>
+          </div>
+          <button type="button" className="home-text-link" onClick={() => navigate('/games')}>
+            All 21 games <span aria-hidden="true">↗</span>
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
-          {MOODS.map((mood, idx) => (
-            <motion.div
+        <div className="home-mood-grid">
+          {MOODS.map((mood, index) => (
+            <motion.button
               key={mood.id}
-              initial={{ opacity: 0, y: 15 }}
+              type="button"
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.08 }}
-              whileHover={{ y: -3, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              transition={{ duration: reduceMotion ? 0 : 0.4, delay: reduceMotion ? 0 : index * 0.06 }}
+              whileHover={reduceMotion ? undefined : { y: -3 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.985 }}
               onClick={() => navigate(`/games/${mood.id}`)}
-              className={`relative overflow-hidden rounded-2xl p-4.5 cursor-pointer border ${mood.borderColor} bg-gradient-to-br ${mood.gradient} shadow-lg ${mood.glowColor} transition-all duration-300 min-h-[140px] flex flex-col justify-between`}
+              className={`home-mood-card home-mood-card--${mood.id}`}
+              aria-label={`${mood.label}: ${mood.description}, ${mood.games.length} games`}
             >
-              <div className="flex items-start justify-between">
-                <span className="text-3xl filter drop-shadow select-none">
-                  {mood.emoji}
-                </span>
-                <span className="text-[10px] font-mono text-ad-text-secondary/70">
-                  {mood.games.length} GAMES
-                </span>
-              </div>
-
-              <div>
-                <h3 className="font-display text-lg font-extrabold tracking-wider text-white">
-                  {mood.label}
-                </h3>
-                <p className="text-[10px] text-ad-text-secondary line-clamp-2 mt-0.5 leading-snug">
-                  {mood.description}
-                </p>
-              </div>
-
-              {/* Ambient Accent Glint */}
-              <div className="absolute -bottom-6 -right-6 w-16 h-16 rounded-full bg-white/5 blur-xl pointer-events-none" />
-            </motion.div>
+              <MoodArtwork mood={mood.id} className="home-mood-art" />
+              <span className="home-mood-scrim" />
+              <span className="home-mood-topline">
+                <span className="home-mood-index">0{index + 1}</span>
+                <span className="home-mood-count">{String(mood.games.length).padStart(2, '0')} GAMES</span>
+              </span>
+              <span className="home-mood-bottomline">
+                <span className="home-mood-emoji" aria-hidden="true">{mood.emoji}</span>
+                <span className="home-mood-name">{mood.label}</span>
+                <span className="home-mood-description">{mood.description}</span>
+              </span>
+              <span className="home-mood-arrow" aria-hidden="true">↗</span>
+            </motion.button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Featured / Signature Game: Truth or Dare */}
-      <Card
-        variant="glass"
-        className="p-4 border-ad-red/40 bg-gradient-to-r from-ad-burgundy/60 via-ad-red/25 to-ad-bg cursor-pointer hover:border-ad-red/70 transition-all"
-        onClick={() => navigate('/games/sexual/truth-or-dare')}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <Badge variant="red" size="sm">
-            SIGNATURE GAME
-          </Badge>
-          <span className="text-xs text-ad-gold font-mono">3-LEVEL TWIST</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-3xl select-none">🎲</div>
-          <div>
-            <h3 className="font-display text-base font-bold text-ad-text">
-              Truth or Dare
-            </h3>
-            <p className="text-xs text-ad-text-secondary leading-snug">
-              Three-level twist ladder, Five-Step Challenge Terminal & strike progression.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <section className="home-lower-grid" aria-label="Your shared journey">
+        <button type="button" className="home-journey-card" onClick={() => navigate('/trophies')}>
+          <span className="home-journey-symbol" aria-hidden="true">✦</span>
+          <span className="home-journey-value">{unlockedCount}<span> / {totalTrophies}</span></span>
+          <span className="home-journey-label">TROPHIES FOUND</span>
+          <span className="home-journey-meter"><span style={{ width: `${Math.min(100, (unlockedCount / totalTrophies) * 100)}%` }} /></span>
+        </button>
+        <button type="button" className="home-journey-card" onClick={() => navigate('/chat')}>
+          <span className="home-journey-symbol" aria-hidden="true">♡</span>
+          <span className="home-journey-value">{sessionsPlayed}<span> sessions</span></span>
+          <span className="home-journey-label">MOMENTS TOGETHER</span>
+          <span className="home-journey-link">Open your chat <span aria-hidden="true">↗</span></span>
+        </button>
+      </section>
 
-      {/* Trophy & Stats Quick Glance */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card
-          variant="solid"
-          className="p-3.5 cursor-pointer hover:border-ad-gold/50 transition-all"
-          onClick={() => navigate('/trophies')}
-        >
-          <div className="flex items-center justify-between text-xs text-ad-text-secondary mb-1">
-            <span>Trophy Cabinet</span>
-            <span className="text-ad-gold font-bold">{unlockedCount}/{totalTrophies}</span>
-          </div>
-          <ProgressBar value={(unlockedCount / totalTrophies) * 100} size="sm" variant="gold" />
-          <div className="text-[10px] text-ad-text-secondary/70 mt-2">
-            Tap to view achievements 🏆
-          </div>
-        </Card>
-
-        <Card
-          variant="solid"
-          className="p-3.5"
-        >
-          <div className="text-xs text-ad-text-secondary mb-1">
-            Couples Stats
-          </div>
-          <div className="font-display text-lg font-bold text-ad-gold">
-            {sessionsPlayed} <span className="text-xs font-normal text-ad-text-secondary">Sessions</span>
-          </div>
-          <div className="text-[10px] text-ad-text-secondary/70 mt-1">
-            Private history preserved 🔒
-          </div>
-        </Card>
-      </div>
-
-      {/* Recently Played List */}
       {recentSessions.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-display text-xs font-bold uppercase tracking-wider text-ad-text-secondary">
-            Recent Adventures
-          </h3>
-          <div className="space-y-1.5">
+        <section className="home-recent-section" aria-labelledby="home-recent-heading">
+          <div className="home-section-heading">
+            <div>
+              <p className="home-eyebrow">YOUR SHARED JOURNAL</p>
+              <h2 id="home-recent-heading">Recently played</h2>
+            </div>
+          </div>
+          <div className="home-recent-list">
             {recentSessions.slice(0, 3).map((session) => (
-              <div
-                key={session.id}
-                className="p-2.5 rounded-xl bg-ad-bg-secondary/60 border border-ad-burgundy/30 flex items-center justify-between text-xs"
-              >
-                <div>
-                  <span className="font-medium text-ad-text capitalize">
-                    {session.gameId.replace(/-/g, ' ')}
-                  </span>
-                  <div className="text-[10px] text-ad-text-secondary">
-                    {session.summary}
-                  </div>
-                </div>
-                <Badge variant="outline" size="sm">
-                  {new Date(session.completedAt).toLocaleDateString()}
-                </Badge>
+              <div key={session.id} className="home-recent-item">
+                <span className="home-recent-mark" aria-hidden="true">✦</span>
+                <span className="home-recent-copy">
+                  <span>{session.gameId.replace(/-/g, ' ')}</span>
+                  <span>{session.summary}</span>
+                </span>
+                <time dateTime={session.completedAt}>
+                  {new Date(session.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </time>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
+
+      <footer className="home-footer">
+        <span>AFTERDARK</span>
+        <span>{APP_CONFIG.tagline}</span>
+      </footer>
     </div>
   );
 };

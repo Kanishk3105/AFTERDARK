@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '@/stores/app.store';
 import { APP_CONFIG } from '@/config/app.config';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,7 @@ export const SplashPage: React.FC = () => {
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
   const ageAcknowledged = useAppStore((s) => s.ageAcknowledged);
   const setAgeAcknowledged = useAppStore((s) => s.setAgeAcknowledged);
+  const reduceMotion = useReducedMotion();
 
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [confirmed18, setConfirmed18] = useState(false);
@@ -45,7 +46,7 @@ export const SplashPage: React.FC = () => {
 
       {/* Subtle Floating Ambient Lights */}
       <motion.div
-        animate={{
+        animate={reduceMotion ? undefined : {
           scale: [1, 1.25, 1],
           opacity: [0.15, 0.35, 0.15],
         }}
@@ -53,7 +54,7 @@ export const SplashPage: React.FC = () => {
         className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-ad-red/20 blur-3xl pointer-events-none"
       />
       <motion.div
-        animate={{
+        animate={reduceMotion ? undefined : {
           scale: [1, 1.3, 1],
           opacity: [0.1, 0.25, 0.1],
         }}
@@ -64,9 +65,9 @@ export const SplashPage: React.FC = () => {
       {/* Top Header Tag */}
       <div className="z-10 pt-8">
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={reduceMotion ? false : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: reduceMotion ? 0 : 0.8 }}
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-ad-gold/25 bg-ad-bg-secondary/60 text-[11px] font-medium tracking-widest uppercase text-ad-gold"
         >
           <span>✦</span>
@@ -79,22 +80,22 @@ export const SplashPage: React.FC = () => {
       <div className="z-10 flex flex-col items-center max-w-sm">
         {/* Emblem */}
         <motion.div
-          initial={{ scale: 0.8, opacity: 0, rotate: -15 }}
+          initial={reduceMotion ? false : { scale: 0.8, opacity: 0, rotate: -15 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ duration: 1.2, type: 'spring' }}
+          transition={{ duration: reduceMotion ? 0 : 1.2, type: 'spring' }}
           className="relative mb-6"
         >
           <div className="w-24 h-24 rounded-full border-2 border-ad-gold/40 bg-gradient-to-br from-ad-burgundy via-ad-red/40 to-ad-bg flex items-center justify-center shadow-2xl shadow-ad-red/40">
             <span className="text-4xl filter drop-shadow-[0_0_12px_rgba(213,170,109,0.5)]">🌹</span>
           </div>
-          <div className="absolute inset-0 rounded-full border border-ad-gold/20 animate-ping opacity-30" />
+          <div className={`absolute inset-0 rounded-full border border-ad-gold/20 opacity-30 ${reduceMotion ? '' : 'animate-ping'}`} />
         </motion.div>
 
         {/* Brand Name */}
         <motion.h1
-          initial={{ opacity: 0, letterSpacing: '0.4em' }}
+          initial={reduceMotion ? false : { opacity: 0, letterSpacing: '0.4em' }}
           animate={{ opacity: 1, letterSpacing: '0.25em' }}
-          transition={{ duration: 1.2, delay: 0.2 }}
+          transition={{ duration: reduceMotion ? 0 : 1.2, delay: reduceMotion ? 0 : 0.2 }}
           className="font-display text-4xl sm:text-5xl font-extrabold text-gradient-gold text-shadow-glow tracking-[0.25em] uppercase mb-4"
         >
           {APP_CONFIG.name}
@@ -102,26 +103,26 @@ export const SplashPage: React.FC = () => {
 
         {/* Divider line */}
         <motion.div
-          initial={{ width: 0 }}
+          initial={reduceMotion ? false : { width: 0 }}
           animate={{ width: 64 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.6 }}
           className="h-[1.5px] bg-gradient-to-r from-transparent via-ad-gold/60 to-transparent mb-5"
         />
 
         {/* Tagline */}
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
+          transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.7 }}
           className="font-display italic text-lg sm:text-xl text-ad-text mb-3"
         >
           "Some moments are just for two."
         </motion.p>
 
         <motion.p
-          initial={{ opacity: 0 }}
+          initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.9 }}
+          transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.9 }}
           className="text-xs text-ad-text-secondary tracking-wider uppercase font-light"
         >
           {APP_CONFIG.tagline}
@@ -131,9 +132,9 @@ export const SplashPage: React.FC = () => {
       {/* Bottom CTA */}
       <div className="z-10 w-full max-w-xs pb-10 space-y-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1 }}
+        transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 1 }}
         >
           <Button
             size="lg"
@@ -146,7 +147,7 @@ export const SplashPage: React.FC = () => {
         </motion.div>
 
         <p className="text-[11px] text-ad-text-secondary/60 tracking-wider">
-          ADULTS 18+ ONLY · PRIVATE & ENCRYPTED
+          18+ ONLY · NO PUBLIC PROFILES · CONSENT FIRST
         </p>
       </div>
 

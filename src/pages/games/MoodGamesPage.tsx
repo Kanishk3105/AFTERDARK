@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MOODS } from '@/config/app.config';
+import { MoodArtwork } from '@/components/branding/MoodArtwork';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -42,34 +43,23 @@ export const MoodGamesPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Hero Mood Banner */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={`p-6 rounded-3xl border ${mood.borderColor} bg-gradient-to-br ${mood.gradient} shadow-2xl relative overflow-hidden`}
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`mood-landing mood-landing--${mood.id}`}
+        aria-labelledby="mood-page-title"
       >
-        <div className="relative z-10 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-4xl filter drop-shadow select-none">
-              {mood.emoji}
-            </span>
-            <Badge variant="gold" size="sm">
-              {mood.games.length} GAMES
-            </Badge>
+        <MoodArtwork mood={mood.id} className="mood-landing-art" />
+        <div className="mood-landing-shade" />
+        <div className="mood-landing-copy">
+          <div className="mood-landing-meta">
+            <span>{mood.emoji} &nbsp; PRIVATE PLAY</span>
+            <Badge variant="gold" size="sm">{mood.games.length} EXPERIENCES</Badge>
           </div>
-
-          <h1 className="font-display text-2xl font-black tracking-wider text-white uppercase">
-            {mood.label}
-          </h1>
-
-          <p className="text-xs text-ad-text/90 leading-relaxed max-w-xs">
-            {mood.description}
-          </p>
+          <h1 id="mood-page-title">{mood.label}</h1>
+          <p>{mood.description}</p>
         </div>
-
-        {/* Ambient Glow */}
-        <div className="absolute -bottom-10 -right-10 w-36 h-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-      </motion.div>
+      </motion.section>
 
       {/* Games in this mood */}
       <div className="space-y-3">
@@ -81,12 +71,15 @@ export const MoodGamesPage: React.FC = () => {
 
         <div className="space-y-3">
           {mood.games.map((game, index) => (
-            <motion.div
+            <motion.button
               key={game.id}
+              type="button"
+              aria-label={`Open ${game.name}: ${game.description}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               onClick={() => navigate(`/games/${mood.id}/${game.id}`)}
+              className="w-full text-left"
             >
               <Card
                 variant="glass"
@@ -121,7 +114,7 @@ export const MoodGamesPage: React.FC = () => {
                   </div>
                 </div>
               </Card>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </div>

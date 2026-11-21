@@ -16,22 +16,22 @@ reconnection, or synchronized answer privacy.
 | Platonic | Would You Rather? | Two authored choices, optional custom choice, private pass-and-play votes, reveal and score. This flow has no component-level test or remote state sync. |
 | Platonic | Who’s More Likely? | Private pass-and-play votes and reveal using player names. It has no component-level test or remote state sync. |
 | Romantic | Love Quiz | Uses the shared preference-choice UI; it is not a distinct quiz engine. No per-game UI test or remote sync. |
-| Romantic | Memory Lane | Shared single-textarea challenge form; it does not collect two private submissions or compare/reveal them. |
-| Romantic | Love Language | Uses yes/maybe/no choices rather than a private ranking across the five love languages. |
-| Romantic | Couple Challenges | Shared challenge text form; separate acceptance, consent, completion and results are not implemented. |
-| Romantic | Romantic Roulette | Dedicated-route spinner advances generic prompts; no independently tested roulette, persisted history or synchronized reveal. |
+| Romantic | Memory Lane | Two local private submissions, gated side-by-side reveal and an optional saved memory note are implemented. It currently uses one prompt per session; there is no remote synchronization or component-level test. |
+| Romantic | Love Language | Dedicated private ranking of the five love languages, unique-rank validation, simultaneous reveal and rank-match scoring are implemented with a tested engine. Remote synchronization and component-level tests remain absent. |
+| Romantic | Couple Challenges | Mutual acceptance, pass-without-penalty, pause/resume and shared completion/results are implemented with a tested engine. It remains local pass-and-play, not remote or server-authoritative. |
+| Romantic | Romantic Roulette | Spins eligible cards from the romantic content pack, applies local no-repeat history and persists the current result. Selection uses the tested shared content engine; no synchronized reveal or two-device history exists. |
 | Sexual | Truth or Dare | Local reducer covers turns, consent actions, strikes, alternatives and five-step state. Page state is not persisted for restart/reconnect; UI coverage is incomplete. |
 | Sexual | Desire Match | Local private yes/maybe/no choices and reveal. No remote privacy, persistence or game UI test. |
-| Sexual | Naughty Roulette | Dedicated-route generic spinner; intensity selection and independently verified random selection are absent. |
-| Sexual | Temptations | Four input fields render, but only the first is controlled; partner selection and approval are not implemented. |
+| Sexual | Naughty Roulette | Spins eligible cards from the sexual content pack, respecting the session intensity and exclusions and recording local no-repeat history. No synchronized two-device reveal exists. |
+| Sexual | Temptations | Four distinct, controlled choices, partner selection, creator approval and penalty-free pass are implemented with tested local state transitions. No remote consent workflow or component-level test exists. |
 | Sexual | Desire Quiz | Uses the generic answer/guess UI and content; no unique quiz engine or remote sync. |
-| Sexual | Emoji Confessions | Local emoji composition; partner interpretation/guess and reveal are not implemented. |
+| Sexual | Emoji Confessions | Emoji composition plus a private meaning, partner interpretation, and gated reveal are implemented with a tested engine. It is local pass-and-play only. |
 | Fantasy | Fantasy Cards | Local private yes/maybe/no selection and reveal. No remote privacy or game UI test. |
-| Fantasy | Scenario Builder | Shared editable fields; a separate partner approval step and persistence are missing. |
+| Fantasy | Scenario Builder | Editable scenario fields persist in the local session; the partner can request changes, approve, or pass. State transitions are engine-tested, but the game is not remotely synchronized. |
 | Fantasy | The Menu | Independent private rankings, duplicate-rank rejection, simultaneous reveal, match scoring and local session persistence are wired. Remote privacy, reconnect behavior and component tests are not implemented. |
-| Fantasy | Challenge Duel | Shared single-textarea form; two private submissions, reveal gating and scoring are not implemented in the page. |
+| Fantasy | Challenge Duel | Two local private submissions, reveal only after both submit and paired completion scoring are implemented with a tested engine. Remote answer privacy is not implemented. |
 | Fantasy | Choose Your Story | One branching story; current node is saved to the local game session. No two-player turn synchronization or story-flow test. |
-| Fantasy | Fantasy Roulette | Generates setting/atmosphere/theme/direction combinations. No durable room history or cross-device no-repeat verification. |
+| Fantasy | Fantasy Roulette | Spins eligible generated combinations from the fantasy content pack and persists the current result with local no-repeat history. Pair-shared history and cross-device no-repeat remain unimplemented. |
 
 ## Content measurement
 
@@ -59,7 +59,7 @@ duplicates and the full catalogue threshold.
 | Requirement | Status | Evidence / remaining limitation |
 |---|---|---|
 | Web type-check and production bundle | Complete and tested | `npm run build`; existing large-chunk warning remains. |
-| Unit tests | Tested | `npm test`; latest run: 52 tests passed across 9 files. |
+| Unit tests | Tested | `npm test`; latest run: 60 tests passed across 9 files. |
 | Supabase schema and local configuration | New migrations tested in GitHub Actions | Clean local Supabase migration reset and all 41 pgTAP assertions passed; all 12 deterministic Edge Function tests passed in workflow run [#6](https://github.com/Kanishk3105/AFTERDARK/actions/runs/44903437509). Docker remains unavailable locally; live project deployment is not tested. |
 | Supabase remote content | Disabled until E2EE is integrated | The new migration defaults rooms to `e2ee_protocol = 'disabled'`, revokes unused legacy invitations and blocks chat reads/writes, media creation/retrieval, and direct game-session access through server-side policies. Online room invitations no longer contain a room key; legacy v1 links are rejected. Live secure messaging is not available. |
 | Room deletion | Implemented; live Storage/scheduler verification pending | Owner-authenticated deletion immediately revokes both members, invitations, push tokens and notifications. A retryable service-role job removes all room Storage objects before cascading room metadata, chat, games, history, media records and credentials. Deterministic retry tests and pgTAP deletion checks are included; production scheduler execution remains unverified. |
